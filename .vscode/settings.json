@@ -1,0 +1,13 @@
+// .vscode/settings.json
+{
+  "files.watcherExclude": {
+    "**/.next/**": true,
+    "**/.turbo/**": true,
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/.turbo": true
+  }
+}

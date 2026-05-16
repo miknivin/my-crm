@@ -1,0 +1,541 @@
+<!doctype html>
+<%
+  const proposal = typeof data !== "undefined" ? data : {};
+  const brandName = proposal.brandName || "Qoncept";
+  const proposalTitle = proposal.title || "Service Proposal";
+  const preparedFor = proposal.preparedFor || "Client";
+  const sectionTagline = proposal.sectionTagline || "HUB OF QUALITY CONCEPTS";
+  const coverTitleLine1 = proposal.coverTitleLine1 || "SERVICE";
+  const coverTitleLine2 = proposal.coverTitleLine2 || "PROPOSAL";
+  const pageFooterLabel = proposal.pageFooterLabel || "+ Proposal";
+  const aboutTitle = proposal.aboutTitle || "ABOUT US";
+  const aboutText = proposal.aboutText || "";
+  const passionTitle = proposal.passionTitle || "OUR PASSION";
+  const passionText = proposal.passionText || "";
+  const expertiseTitle = proposal.expertiseTitle || "OUR EXPERTISE";
+  const expertiseSubtitle = proposal.expertiseSubtitle || "We specialize in a wide range of services, including";
+  const expertiseHighlightTitle = proposal.expertiseHighlightTitle || "FEATURED SERVICE";
+  const expertiseHighlightText = proposal.expertiseHighlightText || "";
+  const expertiseCards = Array.isArray(proposal.expertiseCards) && proposal.expertiseCards.length
+    ? proposal.expertiseCards
+    : [
+        { title: "Service One", description: "Description for service one." },
+        { title: "Service Two", description: "Description for service two." },
+        { title: "Service Three", description: "Description for service three." }
+      ];
+  const services = Array.isArray(proposal.services) && proposal.services.length
+    ? proposal.services
+    : [{ title: "Service", quantity: 1, unitPrice: 0, description: "Service details" }];
+  const paymentTerms = Array.isArray(proposal.paymentTerms) && proposal.paymentTerms.length
+    ? proposal.paymentTerms
+    : [];
+  const account = proposal.accountDetails || {};
+  const apartTitle = proposal.apartTitle || "What Sets Us Apart";
+  const apartCards = Array.isArray(proposal.apartCards) && proposal.apartCards.length
+    ? proposal.apartCards
+    : [
+        { title: "Creative Approach", description: "We deliver unique ideas that fit your brand." },
+        { title: "Custom Strategy", description: "Every engagement is tailored to your objectives." },
+        { title: "Proven Results", description: "We focus on outcomes that drive growth." }
+      ];
+  const chooseTitle = proposal.chooseTitle || "Choose Us";
+  const chooseText = proposal.chooseText || "";
+  const contactTitle = proposal.contactTitle || "Contact Us";
+  const contactText = proposal.contactText || "";
+  const contact = proposal.contact || {};
+  const images = proposal.images || {};
+  const totals = proposal.totals || {};
+  const currencySymbol = proposal.currencySymbol || "₹";
+  const formatMoney = (value) => {
+    const amount = Number(value || 0);
+    return `${currencySymbol}${amount.toLocaleString("en-IN")}/-`;
+  };
+  const serviceTotal = totals.serviceTotal ?? services.reduce((sum, s) => {
+    const qty = Number(s.quantity ?? 1);
+    const price = Number(s.unitPrice ?? s.price ?? 0);
+    return sum + qty * price;
+  }, 0);
+%>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= brandName %> - <%= proposalTitle %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        font-family: "Rajdhani", sans-serif;
+      }
+      body {
+        background: white;
+        color: #1a1a1a;
+      }
+
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+        background: white;
+      }
+
+      .clip-card {
+        clip-path: polygon(
+          20px 0%,
+          100% 0%,
+          100% calc(100% - 20px),
+          calc(100% - 20px) 100%,
+          0% 100%,
+          0% 20px
+        );
+      }
+      .clip-card-br {
+        clip-path: polygon(
+          0% 0%,
+          100% 0%,
+          100% calc(100% - 20px),
+          calc(100% - 20px) 100%,
+          0% 100%
+        );
+      }
+
+      .header-rule {
+        border-top: 1px solid #ccc;
+      }
+
+      .section-label {
+        font-size: 11px;
+        letter-spacing: 0.15em;
+        color: #888;
+        font-weight: 500;
+      }
+
+      @media print {
+        .page {
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <div class="page shadow-2xl">
+      <section
+        class="relative min-h-screen flex flex-col p-12 overflow-hidden bg-white"
+      >
+        <div class="mb-16">
+          <img
+            src="<%= images.logoHorizontal || 'https://ik.imagekit.io/c1jhxlxiy/logo%20horizontal.png' %>"
+            alt="<%= brandName %>"
+            class="h-10 object-contain"
+          />
+        </div>
+
+        <div class="text-gray-400 text-3xl font-light mb-4">+</div>
+
+        <div>
+          <h1
+            class="text-6xl font-bold tracking-wide leading-tight text-gray-900 uppercase"
+          >
+            <%= coverTitleLine1 %><br /><%= coverTitleLine2 %>
+          </h1>
+        </div>
+
+        <div class="absolute bottom-14 left-12">
+          <p class="text-sm font-normal text-gray-500">Prepared for</p>
+          <p class="text-lg font-bold tracking-widest text-gray-900"><%= preparedFor %></p>
+        </div>
+
+        <div class="absolute -bottom-5 right-0 overflow-hidden w-full">
+          <img
+            src="<%=  'https://ik.imagekit.io/c1jhxlxiy/proposal%20front%20page.png' %>"
+            alt="Q"
+            class="w-full h-full object-contain object-bottom-right"
+          />
+        </div>
+      </section>
+
+      <section class="min-h-screen bg-white pt-8 pb-16 overflow-hidden">
+        <div class="flex items-center px-10 mb-0">
+          <span class="section-label mr-4"><%= sectionTagline %></span>
+          <div class="flex-1 header-rule"></div>
+        </div>
+
+        <div class="relative mt-4 bg-gray-800 h-80 overflow-hidden">
+          <div
+            class="absolute inset-0 bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900 opacity-90"
+          >
+            <img
+              src="<%= images.aboutCover || 'https://ik.imagekit.io/c1jhxlxiy/16090.jpg' %>"
+              class="w-full mix-blend-multiply"
+              alt=""
+            />
+          </div>
+          <div
+            class="absolute bottom-0 left-0 w-1/2 bg-black text-white px-8 py-6"
+          >
+            <h2 class="text-5xl font-bold uppercase tracking-wide"><%= aboutTitle %></h2>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-0 bg-black text-white">
+          <div class="px-8 py-10">
+            <p class="text-sm leading-relaxed font-light" style="text-align: justify">
+              <%= aboutText %>
+            </p>
+            <div class="mt-6 w-12 border-t border-white"></div>
+          </div>
+
+          <div class="px-8 py-10 bg-white text-gray-900">
+            <h3 class="text-2xl font-bold uppercase tracking-wide mb-4">
+              <%= passionTitle %>
+            </h3>
+            <p class="text-sm leading-relaxed font-light" style="text-align: justify">
+              <%= passionText %>
+            </p>
+          </div>
+        </div>
+
+        <div class="px-10 mt-auto pt-12">
+          <div class="flex justify-between items-center border-t border-gray-300 pt-2">
+            <div class="flex-1"></div>
+            <span class="text-xs text-gray-400 font-medium"><%= pageFooterLabel %></span>
+          </div>
+        </div>
+      </section>
+
+        <section class="min-h-screen bg-white pt-8 pb-16">
+        <div class="flex items-center px-10 mb-10">
+          <div class="flex-1 header-rule"></div>
+          <span class="section-label ml-4">HUB OF QUALITY CONCEPTS</span>
+        </div>
+
+        <div class="px-10">
+          <!-- Title row -->
+          <div class="flex items-start justify-between mb-10">
+            <div>
+              <h2 class="text-3xl font-bold uppercase tracking-wide">
+                OUR EXPERTISE
+              </h2>
+              <p class="text-2xl font-light text-gray-500 mt-1">
+                We specialize in a wide range of<br />branding services,
+                including
+              </p>
+              <div class="mt-4 w-12 border-t-2 border-gray-900"></div>
+            </div>
+            <!-- Package designing top-right card -->
+            <div class="w-56 bg-gray-300 p-5 clip-card-br">
+              <h4
+                class="text-base font-bold uppercase tracking-wide leading-tight mb-2"
+              >
+                PACKAGE<br />DESIGNING
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                We create eye-catching packaging that not only protects your
+                products but also enhances their visual appeal.
+              </p>
+            </div>
+          </div>
+
+          <!-- Services grid -->
+          <div class="grid grid-cols-3 gap-0 border border-gray-200">
+            <!-- Row 1 -->
+            <div class="clip-card border border-gray-200 p-5 bg-white">
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                LOGO<br />CREATION
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                Our logo designs capture the essence of your brand, leaving a
+                memorable mark in the minds of your audience.
+              </p>
+            </div>
+            <div class="border border-gray-200 p-5 bg-gray-300">
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                CORPORATE<br />PROFILES
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                We craft professional corporate profiles that convey your
+                brand's story, values, and mission.
+              </p>
+            </div>
+            <div class="clip-card-br border border-gray-200 p-5 bg-white">
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                CREATIVE<br />BROCHURES
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                Our creative brochures are designed to engage and inform,
+                turning potential customers into loyal advocates.
+              </p>
+            </div>
+
+            <!-- Row 2 -->
+            <div
+              class="border border-gray-200 p-5 bg-gray-300"
+              style="
+                clip-path: polygon(
+                  0 0,
+                  100% 0,
+                  100% 100%,
+                  20px 100%,
+                  0 calc(100% - 20px)
+                );
+              "
+            >
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                SOCIAL MEDIA<br />CREATIVES
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                We leverage the power of social media with visually striking
+                creatives that captivate and convert your audience.
+              </p>
+            </div>
+            <div class="border border-gray-200 p-5 bg-white">
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                ATTRACTIVE<br />WEBSITES
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                Our websites are not just visually appealing but also
+                user-friendly, delivering an outstanding online experience.
+              </p>
+            </div>
+            <div
+              class="border border-gray-200 p-5 bg-gray-300"
+              style="
+                clip-path: polygon(
+                  0 0,
+                  100% 0,
+                  100% calc(100% - 20px),
+                  calc(100% - 20px) 100%,
+                  0 100%
+                );
+              "
+            >
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                CREATIVE<br />HOARDINGS
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                Make a larger-than-life statement with our hoarding designs that
+                grab attention and drive brand recognition.
+              </p>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="border border-gray-200 p-5 bg-white clip-card">
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                CORPORATE<br />GIFTING
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                Elevate your brand's presence with our corporate gifting
+                solutions, designed to leave a lasting impression.
+              </p>
+            </div>
+            <div class="border border-gray-200 p-5 bg-gray-300">
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                PRINTING<br />SERVICES
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                From business cards to banners, we offer top-notch printing
+                services to bring your marketing materials to life.
+              </p>
+            </div>
+            <div class="border border-gray-200 p-5 bg-white">
+              <h4 class="text-lg font-bold uppercase tracking-wide mb-3">
+                AD<br />PRODUCTION
+              </h4>
+              <p class="text-xs font-light leading-relaxed">
+                Let us bring your advertising ideas to life with our
+                comprehensive ad production services, ensuring your brand
+                shines.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-10 mt-10">
+          <div
+            class="flex justify-between items-center border-t border-gray-300 pt-2"
+          >
+            <div class="flex-1"></div>
+            <span class="text-xs text-gray-400 font-medium"
+              >+ Website Development Proposal</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="min-h-screen bg-white pt-8 pb-16">
+        <div class="flex items-center px-10 mb-10">
+          <span class="section-label mr-4"><%= sectionTagline %></span>
+          <div class="flex-1 header-rule"></div>
+        </div>
+
+        <div class="px-10">
+          <h2 class="text-5xl font-bold uppercase tracking-wide mb-2">
+            <%= proposalTitle.toUpperCase() %>
+          </h2>
+          <div class="w-14 border-t-2 border-gray-900 mb-10"></div>
+
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-900 text-white">
+                <th class="py-4 px-8 text-left text-base font-semibold tracking-wide w-2/3">Work</th>
+                <th class="py-4 px-8 text-left text-base font-semibold tracking-wide">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% services.forEach((service) => { %>
+                <tr class="bg-gray-200">
+                  <td class="py-4 px-8 text-sm font-medium border-b border-white">
+                    <%= service.title || service.name %>
+                    <% if (service.description) { %>
+                      <span class="block text-xs font-light mt-1"><%= service.description %></span>
+                    <% } %>
+                  </td>
+                  <td class="py-4 px-8 bg-gray-900 text-white text-lg font-bold border-b border-white">
+                    <%= formatMoney((service.quantity ?? 1) * (service.unitPrice ?? service.price ?? 0)) %>
+                  </td>
+                </tr>
+              <% }) %>
+
+              <tr class="bg-gray-900 text-white">
+                <td class="py-4 px-8 text-base font-semibold tracking-wide text-right">Total</td>
+                <td class="py-4 px-8 text-lg font-bold"><%= formatMoney(serviceTotal) %></td>
+              </tr>
+
+              <% if (paymentTerms.length) { %>
+                <tr class="bg-gray-900 text-white">
+                  <td colspan="2" class="py-4 px-8 text-base font-semibold tracking-wide text-center">
+                    Payment Terms
+                  </td>
+                </tr>
+                <% paymentTerms.forEach((term) => { %>
+                  <tr class="bg-gray-200">
+                    <td class="py-4 px-8 text-sm font-medium"><%= term.label %></td>
+                    <td class="py-4 px-8 bg-gray-900 text-white text-lg font-bold">
+                      <%= term.amountLabel || formatMoney(term.amount) %>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } %>
+            </tbody>
+          </table>
+
+          <div class="mt-10 flex justify-between items-start">
+            <div>
+              <p class="text-sm font-bold underline mb-2">Account Details</p>
+              <div class="text-sm font-light space-y-1">
+                <p><span class="inline-block w-32 font-medium">Account No.</span>: <%= account.accountNo || "" %></p>
+                <p><span class="inline-block w-32 font-medium">Name</span>: <%= account.name || "" %></p>
+                <p><span class="inline-block w-32 font-medium">IFSC</span>: <%= account.ifsc || "" %></p>
+                <p><span class="inline-block w-32 font-medium">Bank</span>: <%= account.bank || "" %></p>
+                <p><span class="inline-block w-32 font-medium">UPI ID</span>: <%= account.upiId || "" %></p>
+              </div>
+            </div>
+            <div class="flex flex-col items-center gap-2">
+              <% if (account.qrImage) { %>
+                <img src="<%= account.qrImage %>" alt="QR Code" class="w-24 h-24 object-contain" />
+              <% } else { %>
+                <div class="w-24 h-24 bg-gray-200 border-2 border-gray-400 flex items-center justify-center">
+                  <svg viewBox="0 0 80 80" class="w-20 h-20" fill="none">
+                    <rect x="4" y="4" width="28" height="28" fill="none" stroke="#1a1a1a" stroke-width="4" />
+                    <rect x="10" y="10" width="16" height="16" fill="#1a1a1a" />
+                    <rect x="48" y="4" width="28" height="28" fill="none" stroke="#1a1a1a" stroke-width="4" />
+                    <rect x="54" y="10" width="16" height="16" fill="#1a1a1a" />
+                    <rect x="4" y="48" width="28" height="28" fill="none" stroke="#1a1a1a" stroke-width="4" />
+                    <rect x="10" y="54" width="16" height="16" fill="#1a1a1a" />
+                    <rect x="48" y="48" width="8" height="8" fill="#1a1a1a" />
+                    <rect x="60" y="48" width="8" height="8" fill="#1a1a1a" />
+                    <rect x="48" y="60" width="8" height="8" fill="#1a1a1a" />
+                    <rect x="60" y="60" width="8" height="8" fill="#1a1a1a" />
+                  </svg>
+                </div>
+              <% } %>
+              <div class="flex gap-2 text-xs font-bold text-gray-700">
+                <span>BHIM</span><span>UPI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-10 mt-10">
+          <div class="flex justify-between items-center border-t border-gray-300 pt-2">
+            <div class="flex-1"></div>
+            <span class="text-xs text-gray-400 font-medium"><%= pageFooterLabel %></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="min-h-screen bg-white pt-8 pb-16">
+        <div class="flex items-center px-10 mb-10">
+          <div class="flex-1 header-rule"></div>
+          <span class="section-label ml-4"><%= sectionTagline %></span>
+        </div>
+
+        <div class="px-10">
+          <h2 class="text-5xl font-bold leading-tight mb-10"><%= apartTitle %></h2>
+
+          <div class="grid grid-cols-3 gap-0 mb-16">
+            <% apartCards.forEach((card) => { %>
+              <div class="bg-gray-300 p-6 border border-gray-400">
+                <h4 class="text-base font-bold mb-4"><%= card.title %></h4>
+                <p class="text-xs font-light leading-relaxed"><%= card.description %></p>
+              </div>
+            <% }) %>
+          </div>
+
+          <div class="flex gap-8 items-start">
+            <div class="relative w-64 h-56 bg-gray-600 flex-shrink-0 overflow-hidden">
+              <div class="absolute inset-0">
+                <img src="<%= images.chooseCover || 'https://ik.imagekit.io/c1jhxlxiy/13096.jpg' %>" class="h-full object-cover mix-blend-lighten" alt="" />
+              </div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <img src="<%= images.qLogo || 'https://ik.imagekit.io/c1jhxlxiy/q%20logo.png' %>" alt="Q Logo" class="w-32 h-32 object-contain mix-blend-multiply" />
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-4xl font-bold mb-4"><%= chooseTitle %></h3>
+              <p class="text-sm font-light leading-relaxed max-w-md"><%= chooseText %></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-10 mt-16">
+          <div class="flex justify-between items-center border-t border-gray-300 pt-2">
+            <div class="flex-1"></div>
+            <span class="text-xs text-gray-400 font-medium"><%= pageFooterLabel %></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="min-h-screen bg-white pt-8 pb-16 flex flex-col justify-end">
+        <div class="px-10 flex-1"></div>
+
+        <div class="px-10 pb-10">
+          <div class="mb-8">
+            <img
+              src="<%= images.logoHorizontal || 'https://ik.imagekit.io/c1jhxlxiy/logo%20horizontal.png' %>"
+              alt="<%= brandName %>"
+              class="h-10 object-contain"
+            />
+          </div>
+
+          <h3 class="text-3xl font-bold mb-2"><%= contactTitle %></h3>
+          <p class="text-sm font-light mb-6 max-w-lg"><%= contactText %></p>
+
+          <div class="text-sm font-light space-y-1">
+            <p class="font-medium"><%= contact.company || '' %></p>
+            <% (contact.addressLines || []).forEach((line) => { %>
+              <p><%= line %></p>
+            <% }) %>
+            <% if (contact.phones) { %><p class="mt-2"><%= contact.phones %></p><% } %>
+            <% if (contact.email) { %>
+              <p><a href="mailto:<%= contact.email %>"><%= contact.email %></a></p>
+            <% } %>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

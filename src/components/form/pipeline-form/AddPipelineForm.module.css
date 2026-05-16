@@ -1,0 +1,23 @@
+/* YourFile.module.css */
+
+.noAutofillBg:-webkit-autofill,
+.noAutofillBg:-webkit-autofill:hover,
+.noAutofillBg:-webkit-autofill:focus,
+.noAutofillBg:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  -webkit-text-fill-color: #1f2937 !important; /* dark text for light mode */
+  background-color: transparent !important;
+  color: #1f2937 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dark mode styles */
+:global(html.dark) .noAutofillBg:-webkit-autofill,
+:global(html.dark) .noAutofillBg:-webkit-autofill:hover,
+:global(html.dark) .noAutofillBg:-webkit-autofill:focus,
+:global(html.dark) .noAutofillBg:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff !important; /* white text in dark mode */
+  -webkit-box-shadow: 0 0 0 30px transparent inset !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+}

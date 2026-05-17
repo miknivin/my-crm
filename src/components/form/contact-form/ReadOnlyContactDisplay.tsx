@@ -1,16 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState, useEffect } from 'react';
-import { ResponseContact, useGetTasksQuery } from '@/app/redux/api/contactApi';
+import {
+  ResponseContact,
+  TaskItem,
+  TaskStatus,
+  useGetTasksQuery,
+  useUpdateTaskMutation,
+} from '@/app/redux/api/contactApi';
 import VeryShortSpinnerPrimary from '@/components/ui/loaders/veryShortSpinnerPrimary';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
+
 import { Modal } from '@/components/ui/modal';
 import TaskTabs from '@/components/pipeline/TaskTabs';
+import TaskCard from '@/components/pipeline/TaskCard';
 import Button from '@/components/ui/button/Button';
+import { toast } from 'react-toastify';
 
 interface ReadOnlyContactDisplayProps {
   contact: ResponseContact;
@@ -33,6 +39,7 @@ const ReadOnlyContactDisplay: React.FC<ReadOnlyContactDisplayProps> = ({ contact
     businessName: '',
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [updateTask, { isLoading: isTaskUpdating }] = useUpdateTaskMutation();
 
   const { data: tasksData, isLoading: isTasksLoading, error: tasksError } = useGetTasksQuery({ contactId: contact._id });
 
@@ -55,6 +62,15 @@ const ReadOnlyContactDisplay: React.FC<ReadOnlyContactDisplayProps> = ({ contact
 
   const closeModal = () => {
     setIsModalOpen(false);
+  };
+
+  const handleTaskStatusChange = async (task: TaskItem, status: TaskStatus) => {
+    try {
+      await updateTask({ id: task._id, status }).unwrap();
+      toast.success('Task status updated');
+    } catch (error: any) {
+      toast.error(error?.data?.error || 'Failed to update task status');
+    }
   };
 
   return (
@@ -165,12 +181,11 @@ const ReadOnlyContactDisplay: React.FC<ReadOnlyContactDisplayProps> = ({ contact
           >
             {tasksData.tasks.map((task) => (
               <SwiperSlide key={task._id}>
-                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{task.title}</h3>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {task.status.replace(/_/g, ' ')} · {task.priority} · {task.dueDate ? `${new Date(task.dueDate).toLocaleDateString()}${task.dueTime ? ` ${task.dueTime}` : ''}` : 'No due date'}
-                  </p>
-                </div>
+                <TaskCard
+                  task={task}
+                  isUpdating={isTaskUpdating}
+                  onStatusChange={handleTaskStatusChange}
+                />
               </SwiperSlide>
             ))}
           </Swiper>

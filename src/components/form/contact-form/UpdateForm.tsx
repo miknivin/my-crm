@@ -2,7 +2,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ResponseContact, useGetTasksQuery, useUpdateContactMutation, useUpdateContactStageMutation } from '@/app/redux/api/contactApi';
+import {
+  ResponseContact,
+  TaskItem,
+  TaskStatus,
+  useGetTasksQuery,
+  useUpdateContactMutation,
+  useUpdateContactStageMutation,
+  useUpdateTaskMutation,
+} from '@/app/redux/api/contactApi';
 import { useGetStagesByPipelineIdQuery } from '@/app/redux/api/pipelineApi';
 import { toast } from 'react-toastify';
 import VeryShortSpinnerPrimary from '@/components/ui/loaders/veryShortSpinnerPrimary';
@@ -10,6 +18,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { Modal } from "@/components/ui/modal";
 import TaskTabs from '@/components/pipeline/TaskTabs';
+import TaskCard from '@/components/pipeline/TaskCard';
 import { useModal } from '@/hooks/useModal';
 
 interface UpdateContactFormProps {
@@ -27,6 +36,7 @@ interface ContactFormData {
 const UpdateContactForm: React.FC<UpdateContactFormProps> = ({ contact }) => {
   const [updateContact, { isLoading: isUpdating }] = useUpdateContactMutation();
   const [updateContactStage, { isLoading: isStageUpdating }] = useUpdateContactStageMutation();
+  const [updateTask, { isLoading: isTaskUpdating }] = useUpdateTaskMutation();
   const { data: tasksData, isLoading: isTasksLoading, error: tasksError } = useGetTasksQuery({ contactId: contact._id });
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
@@ -120,6 +130,15 @@ const UpdateContactForm: React.FC<UpdateContactFormProps> = ({ contact }) => {
         ? contact.pipelinesActive.find(entry => entry.pipeline_id?.toString() === DEFAULT_PIPELINE_ID)
         : null;
       setSelectedStage(pipelineEntry?.stage_id?.toString() || '');
+    }
+  };
+
+  const handleTaskStatusChange = async (task: TaskItem, status: TaskStatus) => {
+    try {
+      await updateTask({ id: task._id, status }).unwrap();
+      toast.success('Task status updated');
+    } catch (error: any) {
+      toast.error(error?.data?.error || 'Failed to update task status');
     }
   };
 
@@ -315,12 +334,11 @@ const UpdateContactForm: React.FC<UpdateContactFormProps> = ({ contact }) => {
           >
             {tasksData.tasks.map((task) => (
               <SwiperSlide key={task._id}>
-                <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{task.title}</h3>
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                    {task.status.replace(/_/g, ' ')} · {task.priority} · {task.dueDate ? `${new Date(task.dueDate).toLocaleDateString()}${task.dueTime ? ` ${task.dueTime}` : ''}` : 'No due date'}
-                  </p>
-                </div>
+                <TaskCard
+                  task={task}
+                  isUpdating={isTaskUpdating}
+                  onStatusChange={handleTaskStatusChange}
+                />
               </SwiperSlide>
             ))}
           </Swiper>

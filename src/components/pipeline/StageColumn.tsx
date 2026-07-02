@@ -1,6 +1,7 @@
 "use client";
 
 import React, { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import {
   GetContactsByStageParams,
@@ -53,7 +54,7 @@ const ContactList = memo(function ContactList({
   onOpenQR,
 }: ContactListProps) {
   return (
-    <div className="space-y-3 px-2 pb-4">
+    <div className="space-y-2 px-2 pb-3">
       {contacts.map((contact) => (
         <SortableContact
           key={contact._id}
@@ -68,6 +69,68 @@ const ContactList = memo(function ContactList({
   );
 });
 
+// Columns rarely exceed this in normal use, so small/medium columns keep the
+// exact existing (non-virtualized) rendering path untouched. Only columns
+// that have accumulated a lot of paginated-in contacts — the case that
+// caused dnd-kit to measure 100+ DOM nodes on every drag start — switch to
+// windowed rendering.
+const VIRTUALIZE_THRESHOLD = 20;
+
+interface VirtualizedContactListProps extends ContactListProps {
+  scrollElementRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const VirtualizedContactList = memo(function VirtualizedContactList({
+  contacts,
+  sortableData,
+  onOpenTask,
+  onOpenProposal,
+  onOpenQR,
+  scrollElementRef,
+}: VirtualizedContactListProps) {
+  const virtualizer = useVirtualizer({
+    count: contacts.length,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: () => 130,
+    overscan: 6,
+    gap: 8,
+    getItemKey: (index) => contacts[index]._id,
+  });
+
+  return (
+    <div
+      className="px-2 pb-3"
+      style={{ position: "relative", height: virtualizer.getTotalSize() }}
+    >
+      {virtualizer.getVirtualItems().map((virtualRow) => {
+        const contact = contacts[virtualRow.index];
+        return (
+          <div
+            key={contact._id}
+            data-index={virtualRow.index}
+            ref={virtualizer.measureElement}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              transform: `translateY(${virtualRow.start}px)`,
+            }}
+          >
+            <SortableContact
+              contact={contact}
+              data={sortableData}
+              onOpenTask={onOpenTask}
+              onOpenProposal={onOpenProposal}
+              onOpenQR={onOpenQR}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+});
+
 function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: StageColumnProps) {
   const { contacts, meta } = useStageView(stage._id);
   const { hydrateStage, requestNextPage } = useBoardActions();
@@ -77,6 +140,7 @@ function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: Stag
 
   const limit = 10;
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const queryArgs = useMemo<GetContactsByStageParams>(
     () => ({
@@ -133,13 +197,22 @@ function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: Stag
   }, [isFetching, isLoading, meta.hasMore, meta.isLoadingMore, requestNextPage, stage._id]);
 
   return (
-    <SortableStage stage={stage} count={meta.totalCount} isFinalThree={isFinalThree}>
+    <SortableStage ref={scrollContainerRef} stage={stage} count={meta.totalCount} isFinalThree={isFinalThree}>
       {isLoading || (isFetching && contacts.length === 0) ? (
         <div className="flex justify-center py-10">
           <ShortSpinnerPrimary />
         </div>
       ) : contacts.length === 0 ? (
         <div className="text-center py-10 text-gray-500 text-sm">No contacts</div>
+      ) : contacts.length > VIRTUALIZE_THRESHOLD ? (
+        <VirtualizedContactList
+          contacts={contacts}
+          sortableData={sortableData}
+          onOpenTask={setTaskContact}
+          onOpenProposal={setProposalContact}
+          onOpenQR={setQrContact}
+          scrollElementRef={scrollContainerRef}
+        />
       ) : (
         <ContactList
           contacts={contacts}

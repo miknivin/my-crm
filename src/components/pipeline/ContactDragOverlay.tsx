@@ -2,7 +2,9 @@
 import React from "react";
 import PhoneIcon from "@/components/ui/flowbiteIcons/Phone";
 import EmailIcon from "@/components/ui/flowbiteIcons/Email";
-import TagIcon from "@/components/ui/flowbiteIcons/TagIcon";
+import InvoiceIcon from "../ui/flowbiteIcons/InvoiceIcon";
+import TaskIcon from "../ui/flowbiteIcons/TaskIcon";
+import RedirectIcon from "@/components/ui/flowbiteIcons/Redirect";
 
 interface Contact {
   _id: string;
@@ -18,7 +20,7 @@ interface ContactDragOverlayProps {
 function ContactDragOverlay({ contact }: ContactDragOverlayProps) {
   return (
     <div
-      className="mb-2 rounded-md border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 shadow-md"
+      className="rounded-md border border-gray-200 bg-white py-1.5 px-2.5 dark:border-gray-700 dark:bg-gray-800 shadow-md"
       style={{ opacity: 0.8 }}
       role="presentation"
       aria-label={`Dragging contact: ${contact.name || "Unnamed"}`}
@@ -34,11 +36,11 @@ function ContactDragOverlay({ contact }: ContactDragOverlayProps) {
           </p>
         </div>
         {/* Button group - visually consistent but non-interactive */}
-        <div className="inline-flex rounded-md shadow-xs my-2" role="group">
+        <div className="inline-flex rounded-md shadow-xs mt-1.5" role="group">
           <button
             type="button"
             disabled
-            className={`inline-flex items-center px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-s-lg dark:border-white dark:text-white ${
+            className={`inline-flex items-center px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-s-lg dark:border-white dark:text-white ${
               !contact.phone ? "opacity-50 cursor-not-allowed" : "opacity-75"
             }`}
             aria-label={`Call ${contact.name || "contact"} (disabled)`}
@@ -49,7 +51,7 @@ function ContactDragOverlay({ contact }: ContactDragOverlayProps) {
             type="button"
             role="button"
             disabled
-            className={`inline-flex items-center px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 dark:border-white dark:text-white ${
+            className={`inline-flex items-center border-r px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 dark:border-white dark:text-white ${
               !contact.email ? "opacity-50 cursor-not-allowed" : "opacity-75"
             }`}
             aria-label={`Email ${contact.name || "contact"} (disabled)`}
@@ -58,13 +60,26 @@ function ContactDragOverlay({ contact }: ContactDragOverlayProps) {
           </button>
           <button
             type="button"
-            role="button"
             disabled
-            className="inline-flex items-center px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-e-lg dark:border-white dark:text-white opacity-75"
-            aria-label={`View tags for ${contact.name || "contact"} (disabled)`}
+            className="inline-flex items-center px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 dark:border-white dark:text-white opacity-75"
+            aria-label="Tasks (disabled)"
           >
-            <TagIcon />
+            <TaskIcon className="w-4 h-4" />
           </button>
+          <button
+            type="button"
+            disabled
+            className="inline-flex items-center border-l px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 dark:border-white dark:text-white opacity-75"
+            aria-label="Generate proposal (disabled)"
+          >
+            <InvoiceIcon className="w-4 h-4" />
+          </button>
+          <span
+            className="inline-flex items-center px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-e-lg dark:border-white dark:text-white opacity-75"
+            aria-label="Open contact (disabled)"
+          >
+            <RedirectIcon />
+          </span>
         </div>
       </div>
     </div>

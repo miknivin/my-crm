@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -27,6 +27,10 @@ import { Modal } from "../ui/modal";
 import AiReportModalShell from "../page-components/AiReportModalShell";
 export type { BatchUpdate, Contact, Stage } from "./types";
 
+// Hoisted so the options object reference is stable across renders —
+// useSensor memoizes internally based on this identity.
+const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 5 } };
+
 interface PipelineBoardContentProps {
   pipelineId: string;
   filters: {
@@ -40,10 +44,45 @@ interface PipelineBoardContentProps {
 }
 
 function PipelineBoardContent({ pipelineId, filters }: PipelineBoardContentProps) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(useSensor(PointerSensor, POINTER_SENSOR_OPTIONS));
   const stages = usePipelineStages();
   const activeContact = useActiveContact();
   const { handleDragStart, handleDragEnd } = useBoardActions();
+  const boardRef = useRef<HTMLDivElement>(null);
+  const scrollIdleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+
+  const updateScrollShadows = useCallback(() => {
+    const board = boardRef.current;
+    if (!board) return;
+    setCanScrollLeft(board.scrollLeft > 1);
+    setCanScrollRight(board.scrollLeft + board.clientWidth < board.scrollWidth - 1);
+  }, []);
+
+  const handleBoardScroll = useCallback(() => {
+    updateScrollShadows();
+    setIsScrolling(true);
+    if (scrollIdleTimeoutRef.current) clearTimeout(scrollIdleTimeoutRef.current);
+    scrollIdleTimeoutRef.current = setTimeout(() => setIsScrolling(false), 150);
+  }, [updateScrollShadows]);
+
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    updateScrollShadows();
+    board.addEventListener("scroll", handleBoardScroll, { passive: true });
+    window.addEventListener("resize", updateScrollShadows);
+    return () => {
+      board.removeEventListener("scroll", handleBoardScroll);
+      window.removeEventListener("resize", updateScrollShadows);
+      if (scrollIdleTimeoutRef.current) clearTimeout(scrollIdleTimeoutRef.current);
+    };
+    // Column count (not just contact count within a column) is what changes
+    // the board's scrollWidth, so re-check whenever the stage list changes.
+  }, [stages.length, updateScrollShadows, handleBoardScroll]);
 
   return (
     <DndContext
@@ -52,16 +91,31 @@ function PipelineBoardContent({ pipelineId, filters }: PipelineBoardContentProps
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-6 min-h-[70vh] max-w-full">
-        {stages.map((stage, idx) => (
-          <StageColumn
-            key={stage._id}
-            stage={stage}
-            pipelineId={pipelineId}
-            filters={filters}
-            isFinalThree={idx >= stages.length - 3}
-          />
-        ))}
+      <div className="relative">
+        <div ref={boardRef} className="flex gap-3 overflow-x-auto pb-6 min-h-[70vh] max-w-full">
+          {stages.map((stage, idx) => (
+            <StageColumn
+              key={stage._id}
+              stage={stage}
+              pipelineId={pipelineId}
+              filters={filters}
+              isFinalThree={idx >= stages.length - 3}
+            />
+          ))}
+        </div>
+
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute inset-y-0 left-0 w-20 bg-linear-to-r from-white via-white/80 via-30% to-transparent transition-opacity duration-200 dark:from-gray-900 dark:via-gray-900/80 ${
+            canScrollLeft && !isScrolling ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute inset-y-0 right-0 w-20 bg-linear-to-l from-white via-white/80 via-30% to-transparent transition-opacity duration-200 dark:from-gray-900 dark:via-gray-900/80 ${
+            canScrollRight && !isScrolling ? "opacity-100" : "opacity-0"
+          }`}
+        />
       </div>
 
       <DragOverlay>{activeContact && <ContactDragOverlay contact={activeContact} />}</DragOverlay>
@@ -108,7 +162,7 @@ const { isOpen: isAiReportModalOpen, openModal: openAiReportModal, closeModal: c
   return (
     <div className="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 dark:border-gray-800 dark:bg-white/3">
       <div className="mx-auto w-full">
-        <div className="flex justify-between items-center my-4">
+        <div className="flex justify-between items-center my-2">
           <h3 className="font-semibold text-gray-800 text-xl dark:text-white/90">{pipelineData.pipeline.name}</h3>
 
           <div className="flex gap-3 items-center">

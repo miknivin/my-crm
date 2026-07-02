@@ -35,6 +35,11 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
   } = useSortable({
     id: `contact-${contact._id}`,   // consistent ID format
     data,                           // pass stageId through
+    // Disable dnd-kit's sibling-shift preview animation. It was fighting
+    // with the virtualizer's own remeasurement during cross-column drags
+    // (each triggers a re-render that reruns the other), causing sustained
+    // main-thread thrashing instead of settling.
+    animateLayoutChanges: () => false,
   });
 
   const searchParams = useSearchParams();
@@ -49,6 +54,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: transform ? 0.8 : 1,
+    willChange: transform ? "transform" : undefined,
   };
 
   const stopPropagation = (event: React.MouseEvent | React.TouchEvent) => {
@@ -98,7 +104,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className="mb-2 rounded-md border border-gray-200 bg-white py-2 px-3 dark:border-gray-700 dark:bg-gray-800 hover:shadow-sm touch-manipulation"
+      className="rounded-md border border-gray-200 bg-white py-1.5 px-2.5 dark:border-gray-700 dark:bg-gray-800 hover:shadow-sm touch-manipulation"
       role="listitem"
       aria-label={`Contact: ${contact.name || "Unnamed"}`}
     >
@@ -123,7 +129,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
             contact.tags.slice(0, 2).map((tag, index) => (
               <span
                 key={index}
-                className="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-blue-400 border border-blue-400 break-words"
+                className="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-0.5 rounded-sm dark:bg-gray-700 dark:text-blue-400 border border-blue-400 break-words"
               >
                 {tag.name}
               </span>
@@ -133,7 +139,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
 
         <div className="flex flex-col justify-start items-start w-full">
           <div
-            className="inline-flex rounded-md shadow-xs my-2"
+            className="inline-flex rounded-md shadow-xs mt-1.5"
             role="group"
             onMouseDown={stopPropagation}
             onTouchStart={stopPropagation}
@@ -148,7 +154,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
                     onOpenQR?.(contact);
                   }
                 }}
-                className={`inline-flex items-center px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-s-lg hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 ${
+                className={`inline-flex items-center px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-s-lg hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 ${
                   !contact.phone ? "opacity-50 cursor-not-allowed" : ""
                 }`}
                 aria-label={`Call ${contact.name || "contact"}`}
@@ -162,7 +168,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
                 role="button"
                 onClick={handleEmailClick}
                 disabled={!contact.email}
-                className={`inline-flex items-center border-r px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 ${
+                className={`inline-flex items-center border-r px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700 ${
                   !contact.email ? "opacity-50 cursor-not-allowed" : ""
                 } ${isAdmin ? "" : "border-r"}`}
               >
@@ -173,7 +179,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
               <button
                 type="button"
                 onClick={() => onOpenTask?.(contact)}
-                className="inline-flex items-center px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+                className="inline-flex items-center px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700"
                 aria-label={`View notes and tags for ${contact.name || "contact"}`}
               >
                 <TaskIcon className="w-4 h-4"/>
@@ -184,7 +190,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
                 <button
                   type="button"
                   onClick={() => onOpenProposal?.(contact)}
-                  className="inline-flex items-center border-l px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+                  className="inline-flex items-center border-l px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700"
                   aria-label={`Generate proposal for ${contact.name || "contact"}`}
                 >
                   <InvoiceIcon className="w-4 h-4" />
@@ -197,7 +203,7 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
                   pathname: `/contacts/${contact._id || "684fbbf3a1b0e8eda0c7cfa4"}`,
                   query: newQuery,
                 }}
-                className="inline-flex items-center px-2 py-2 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-e-lg hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+                className="inline-flex items-center px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border border-gray-900 rounded-e-lg hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700"
               >
                 <RedirectIcon />
               </Link>

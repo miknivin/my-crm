@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import React, { memo, forwardRef, useCallback } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 // import ShuffleIcon from "../ui/flowbiteIcons/Shuffle";
@@ -17,10 +17,27 @@ interface SortableStageProps {
   children?: React.ReactNode;   // ← added so you can pass contacts list
 }
 
-function SortableStage({ stage, count = 0, isFinalThree, children }: SortableStageProps) {
+function SortableStageComponent(
+  { stage, count = 0, isFinalThree, children }: SortableStageProps,
+  forwardedRef: React.ForwardedRef<HTMLDivElement>
+) {
   const { attributes, setNodeRef, transform, transition } = useSortable({
     id: `stage-${stage._id}`,
   });
+
+  // The scrollable column div doubles as dnd-kit's sortable node and, when
+  // forwarded, as the scroll container a virtualizer needs to measure against.
+  // Memoized so the ref identity is stable across renders — an unstable ref
+  // callback makes React detach/reattach it on every render, which was
+  // disrupting the virtualizer's scroll tracking.
+  const setRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      if (typeof forwardedRef === "function") forwardedRef(node);
+      else if (forwardedRef) forwardedRef.current = node;
+    },
+    [setNodeRef, forwardedRef]
+  );
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -34,15 +51,15 @@ function SortableStage({ stage, count = 0, isFinalThree, children }: SortableSta
 
   return (
     <div
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
       {...attributes}
-      className="mb-4 flex max-h-[85vh] min-w-64 flex-col overflow-hidden rounded border border-gray-200 top-0 hover:shadow-md dark:border-gray-700"
+      className="pipeline-stage-scrollbar mb-4 max-h-[85vh] min-w-56 overflow-y-auto rounded border border-gray-200 top-0 hover:shadow-md dark:border-gray-700"
       role="listitem"
       aria-label={`Stage: ${stage.name}`}
     >
-      <div className={`flex shrink-0 sticky justify-center items-center flex-col mb-4 rounded border border-gray-200 p-4 dark:border-gray-700 hover:shadow-md top-0 bg-white ${isFinalThree ? "text-white dark:text-white bg-success-500 dark:bg-success-600"  : "text-gray-800 dark:text-white/90 bg-white dark:bg-gray-800"}`}>
-        <h4 className={`font-medium text-lg ${isFinalThree ? "text-white dark:text-white" : "text-gray-800 dark:text-white/90"}`}>
+      <div className={`flex sticky justify-center items-center flex-col mb-2 rounded border border-gray-200 p-2.5 dark:border-gray-700 hover:shadow-md top-0 bg-white ${isFinalThree ? "text-white dark:text-white bg-success-500 dark:bg-success-600"  : "text-gray-800 dark:text-white/90 bg-white dark:bg-gray-800"}`}>
+        <h4 className={`font-medium text-sm ${isFinalThree ? "text-white dark:text-white" : "text-gray-800 dark:text-white/90"}`}>
           {stage.name}
         </h4>
         <p className="font-light text-xs text-white dark:text-white">{count} contacts</p>
@@ -60,11 +77,13 @@ function SortableStage({ stage, count = 0, isFinalThree, children }: SortableSta
       </div>
 
       {/* Contacts go here – this is where children are rendered */}
-      <div className="pipeline-stage-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="mt-3">
         {children}
       </div>
     </div>
   );
 }
+
+const SortableStage = forwardRef(SortableStageComponent);
 
 export default memo(SortableStage);

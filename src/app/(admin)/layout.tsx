@@ -65,7 +65,7 @@ export default function AdminLayout({
         {/* Page content wrapper */}
         <div
           className={`
-            mx-auto p-4 md:p-6
+            mx-auto p-4 md:p-6 pt-1.5!
             ${contentMaxWidth}
             transition-all duration-300 ease-in-out
           `}

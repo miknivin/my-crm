@@ -84,9 +84,12 @@ export const applyReorder = (args: {
   const { contacts, sourceIndex, destinationIndex } = args;
   const reordered = [...contacts];
 
+  // destinationIndex is the target card's index in the pre-removal array —
+  // the same convention dnd-kit's own arrayMove uses (splice out, then
+  // splice in at the raw index), so the dragged card ends up occupying the
+  // target's slot with no further adjustment needed.
   const [movingContact] = reordered.splice(sourceIndex, 1);
-  const adjustedIndex = sourceIndex < destinationIndex ? destinationIndex - 1 : destinationIndex;
-  reordered.splice(adjustedIndex, 0, movingContact);
+  reordered.splice(destinationIndex, 0, movingContact);
 
   return reordered;
 };

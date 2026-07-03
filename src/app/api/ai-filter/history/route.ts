@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthenticatedUser } from "../../middlewares/auth";
+import { isAuthenticatedUser, authorizeRoles } from "../../middlewares/auth";
 import dbConnect from "@/app/lib/db/connection";
 import AiReportSessionMessage from "@/app/models/AiReportSessionMessage";
 
@@ -16,16 +16,18 @@ type StoredAiResponse = {
 export async function GET(request: NextRequest) {
   try {
     const user = await isAuthenticatedUser(request);
+    authorizeRoles(user, "admin", "team_member");
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(Number(searchParams.get("limit") || 20), 50);
+    const limit = Math.min(Number(searchParams.get("limit") || 20), 100);
     const sessionId = searchParams.get("sessionId")?.trim();
+    const sort = searchParams.get("sort") === "asc" ? 1 : -1;
 
     const query = sessionId ? { user: user._id, sessionId } : { user: user._id };
 
     const history = await AiReportSessionMessage.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: sort })
       .limit(limit)
       .lean();
 
@@ -42,7 +44,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, items });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load history";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = message === "Not allowed" ? 403 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

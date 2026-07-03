@@ -2,6 +2,7 @@
 
 import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
 import {
   GetContactsByStageParams,
@@ -46,36 +47,13 @@ interface ContactListProps {
   onOpenQR: (contact: Contact) => void;
 }
 
-const ContactList = memo(function ContactList({
-  contacts,
-  sortableData,
-  onOpenTask,
-  onOpenProposal,
-  onOpenQR,
-}: ContactListProps) {
-  return (
-    <div className="space-y-2 px-2 pb-3">
-      {contacts.map((contact) => (
-        <SortableContact
-          key={contact._id}
-          contact={contact}
-          data={sortableData}
-          onOpenTask={onOpenTask}
-          onOpenProposal={onOpenProposal}
-          onOpenQR={onOpenQR}
-        />
-      ))}
-    </div>
-  );
-});
-
-// Columns rarely exceed this in normal use, so small/medium columns keep the
-// exact existing (non-virtualized) rendering path untouched. Only columns
-// that have accumulated a lot of paginated-in contacts — the case that
-// caused dnd-kit to measure 100+ DOM nodes on every drag start — switch to
-// windowed rendering.
-const VIRTUALIZE_THRESHOLD = 20;
-
+// Always virtualized, regardless of how many contacts this one column has
+// loaded. dnd-kit's collision detection measures every registered droppable
+// across the WHOLE board on every drag, not just the active column — so
+// even columns with a "small" per-column count (e.g. the default 10-per-page
+// first load × 10+ columns) add up to the same DOM-measurement cost that
+// caused multi-hundred-ms drag-start/cross-column blocking. A per-column
+// threshold can never fix a board-wide aggregate problem.
 interface VirtualizedContactListProps extends ContactListProps {
   scrollElementRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -92,42 +70,54 @@ const VirtualizedContactList = memo(function VirtualizedContactList({
     count: contacts.length,
     getScrollElement: () => scrollElementRef.current,
     estimateSize: () => 130,
-    overscan: 6,
+    overscan: 2,
     gap: 8,
     getItemKey: (index) => contacts[index]._id,
   });
 
+  const contactIds = useMemo(() => contacts.map((contact) => `contact-${contact._id}`), [contacts]);
+
   return (
-    <div
-      className="px-2 pb-3"
-      style={{ position: "relative", height: virtualizer.getTotalSize() }}
-    >
-      {virtualizer.getVirtualItems().map((virtualRow) => {
-        const contact = contacts[virtualRow.index];
-        return (
-          <div
-            key={contact._id}
-            data-index={virtualRow.index}
-            ref={virtualizer.measureElement}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              transform: `translateY(${virtualRow.start}px)`,
-            }}
-          >
-            <SortableContact
-              contact={contact}
-              data={sortableData}
-              onOpenTask={onOpenTask}
-              onOpenProposal={onOpenProposal}
-              onOpenQR={onOpenQR}
-            />
-          </div>
-        );
-      })}
-    </div>
+    <SortableContext items={contactIds} strategy={verticalListSortingStrategy}>
+      <div
+        className="px-2 pb-3"
+        style={{ position: "relative", height: virtualizer.getTotalSize() }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const contact = contacts[virtualRow.index];
+          return (
+            <div
+              key={contact._id}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: "absolute",
+                // A real `top` offset (not `transform: translateY`) — dnd-kit
+                // measures droppables via getTransformAgnosticClientRect(),
+                // which explicitly *undoes* CSS transforms before treating
+                // them as the element's true rect (assuming transforms are
+                // only used for transient drag animation). Since this is our
+                // permanent row-positioning mechanism, translateY caused
+                // every virtualized card to measure as the same collapsed
+                // rect, making same-column collision detection unable to
+                // tell cards apart.
+                top: virtualRow.start,
+                left: 0,
+                width: "100%",
+              }}
+            >
+              <SortableContact
+                contact={contact}
+                data={sortableData}
+                onOpenTask={onOpenTask}
+                onOpenProposal={onOpenProposal}
+                onOpenQR={onOpenQR}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </SortableContext>
   );
 });
 
@@ -204,7 +194,7 @@ function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: Stag
         </div>
       ) : contacts.length === 0 ? (
         <div className="text-center py-10 text-gray-500 text-sm">No contacts</div>
-      ) : contacts.length > VIRTUALIZE_THRESHOLD ? (
+      ) : (
         <VirtualizedContactList
           contacts={contacts}
           sortableData={sortableData}
@@ -212,14 +202,6 @@ function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: Stag
           onOpenProposal={setProposalContact}
           onOpenQR={setQrContact}
           scrollElementRef={scrollContainerRef}
-        />
-      ) : (
-        <ContactList
-          contacts={contacts}
-          sortableData={sortableData}
-          onOpenTask={setTaskContact}
-          onOpenProposal={setProposalContact}
-          onOpenQR={setQrContact}
         />
       )}
 

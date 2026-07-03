@@ -6,10 +6,13 @@ import {
   DragOverlay,
   PointerSensor,
   closestCenter,
+  pointerWithin,
   useSensor,
   useSensors,
+  type CollisionDetection,
 } from "@dnd-kit/core";
-import { useSearchParams } from "next/navigation";
+import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useGetPipelineByIdQuery } from "@/app/redux/api/pipelineApi";
 import Button from "@/components/ui/button/Button";
@@ -23,13 +26,44 @@ import StageColumn from "./StageColumn";
 import { PipelineBoardProvider, useActiveContact, useBoardActions, usePipelineStages } from "./board/PipelineBoardProvider";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/redux/rootReducer";
-import { Modal } from "../ui/modal";
-import AiReportModalShell from "../page-components/AiReportModalShell";
 export type { BatchUpdate, Contact, Stage } from "./types";
 
 // Hoisted so the options object reference is stable across renders —
 // useSensor memoizes internally based on this identity.
 const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 5 } };
+
+// Stage columns are sortable containers (`stage-<id>`) whose registered
+// droppable rect spans the ENTIRE column — header plus every card inside
+// it — because the same node doubles as the horizontal column-reorder
+// handle. That means a card droppable (`contact-<id>`) and its OWN
+// enclosing stage droppable both match at the same pointer position, with
+// no container-vs-item distinction. Cross-column drops still resolve fine
+// (landing on anything in a different column is a valid destination
+// either way), but same-column drops can resolve to the enclosing stage
+// (or the dragged card's own unmoved registration) instead of the card
+// actually under the pointer — collapsing source/destination to the same
+// index, which reads as a no-op "snap back". Filtering candidates down to
+// contact-level matches first (excluding the active card itself) removes
+// that ambiguity; only fall back to any match (including stage containers)
+// when no card is under the pointer, e.g. an empty column or below the
+// last card.
+const collisionDetectionStrategy: CollisionDetection = (args) => {
+  const activeId = String(args.active.id);
+  const isOtherCard = (id: typeof args.active.id) => {
+    const value = String(id);
+    return value.startsWith("contact-") && value !== activeId;
+  };
+
+  const pointerCollisions = pointerWithin(args);
+  const pointerCardCollisions = pointerCollisions.filter((c) => isOtherCard(c.id));
+  if (pointerCardCollisions.length > 0) return pointerCardCollisions;
+  if (pointerCollisions.length > 0) return pointerCollisions;
+
+  const centerCollisions = closestCenter(args);
+  const centerCardCollisions = centerCollisions.filter((c) => isOtherCard(c.id));
+  if (centerCardCollisions.length > 0) return centerCardCollisions;
+  return centerCollisions;
+};
 
 interface PipelineBoardContentProps {
   pipelineId: string;
@@ -53,6 +87,7 @@ function PipelineBoardContent({ pipelineId, filters }: PipelineBoardContentProps
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
+  const stageIds = useMemo(() => stages.map((stage) => `stage-${stage._id}`), [stages]);
 
   const updateScrollShadows = useCallback(() => {
     const board = boardRef.current;
@@ -87,21 +122,23 @@ function PipelineBoardContent({ pipelineId, filters }: PipelineBoardContentProps
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetectionStrategy}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div className="relative">
         <div ref={boardRef} className="flex gap-3 overflow-x-auto pb-6 min-h-[70vh] max-w-full">
-          {stages.map((stage, idx) => (
-            <StageColumn
-              key={stage._id}
-              stage={stage}
-              pipelineId={pipelineId}
-              filters={filters}
-              isFinalThree={idx >= stages.length - 3}
-            />
-          ))}
+          <SortableContext items={stageIds} strategy={horizontalListSortingStrategy}>
+            {stages.map((stage, idx) => (
+              <StageColumn
+                key={stage._id}
+                stage={stage}
+                pipelineId={pipelineId}
+                filters={filters}
+                isFinalThree={idx >= stages.length - 3}
+              />
+            ))}
+          </SortableContext>
         </div>
 
         <div
@@ -128,7 +165,7 @@ export default function PipelineBody({ pipelineId }: { pipelineId: string }) {
     skip: !pipelineId,
   });
 const { user } = useSelector((state: RootState) => state.user);
-const { isOpen: isAiReportModalOpen, openModal: openAiReportModal, closeModal: closeAiReportModal } = useModal();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { isOpen, openModal, closeModal } = useModal();
 
@@ -173,7 +210,7 @@ const { isOpen: isAiReportModalOpen, openModal: openAiReportModal, closeModal: c
               </div>
             </Button>
              {canAccessAiReport && (
-              <Button size="sm" variant="outline" onClick={() => openAiReportModal()}>
+              <Button size="sm" variant="outline" onClick={() => router.push("/ai-report")}>
                 AI Report
               </Button>
               )}
@@ -188,15 +225,6 @@ const { isOpen: isAiReportModalOpen, openModal: openAiReportModal, closeModal: c
           <PipelineBoardContent pipelineId={pipelineId} filters={filters} />
         </PipelineBoardProvider>
       </div>
-
-      <Modal
-        isOpen={isAiReportModalOpen}
-        onClose={closeAiReportModal}
-        isFullscreen
-        className="bg-white p-6 dark:bg-gray-900 lg:p-10"
-      >
-        <AiReportModalShell onClose={closeAiReportModal} />
-      </Modal>
 
       <PipelineOffCanvas isOpen={isOpen} onClose={closeModal} />
     </div>

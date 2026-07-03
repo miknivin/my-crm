@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import DynamicTable, {
-  type DynamicTableColumn,
-  type DynamicTableRow,
-} from "@/components/ui/table/DynamicTable";
+import { formatDistanceToNow } from "date-fns";
+import { useSelector } from "react-redux";
 import UpArrowIcon from "../ui/flowbiteIcons/UpArrow";
 import { useGetTeamMembersQuery } from "@/app/redux/api/userApi";
 import { useGetPipelineByIdQuery } from "@/app/redux/api/pipelineApi";
@@ -12,20 +10,12 @@ import { activityOptions } from "@/components/form/contactFilter/elements/Activi
 import AiReportResponseView from "./AiReportResponseView";
 import VeryShortSpinnerPrimary from "@/components/ui/loaders/veryShortSpinnerPrimary";
 import { AiFilterQueryResponse } from "@/app/types/ai-report";
+import { RootState } from "@/app/redux/rootReducer";
 import {
-  useGetAiHistoryQuery,
+  useGetAiSessionsQuery,
+  useLazyGetAiHistoryQuery,
   useRunAiQueryMutation,
 } from "@/app/redux/api/aiReportApi";
-
-type AiReportModalShellProps = {
-  loading?: boolean;
-  error?: string | null;
-  result?: React.ReactNode;
-  onClose: () => void;
-  onSend?: (query: string) => void;
-  tableColumns?: DynamicTableColumn[];
-  tableRows?: DynamicTableRow[];
-};
 
 type ChatMessage = {
   id: string;
@@ -118,14 +108,10 @@ const getCaretCoordinates = (
   return { bottom, left };
 };
 
-export default function AiReportModalShell({
-  loading = false,
-  error = null,
-  result = null,
-  onSend,
-  tableColumns = [],
-  tableRows = [],
-}: AiReportModalShellProps) {
+export default function AiReportPageContent() {
+  const { user } = useSelector((state: RootState) => state.user);
+  const canAccessAiReport = !!user && ["admin", "team_member"].includes(user.role);
+
   const [queryDisplay, setQueryDisplay] = useState("");
   const [queryInternal, setQueryInternal] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -139,19 +125,21 @@ export default function AiReportModalShell({
   const [typedFragment, setTypedFragment] = useState("");
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isHydrating, setIsHydrating] = useState(false);
   const [sessionId, setSessionId] = useState(getInitialSessionId);
-  const [historyItems, setHistoryItems] = useState<
-    Array<{ id: string; sessionId?: string; queryText: string; uiType?: string; updatedAt?: string; response?: Record<string, unknown> }>
-  >([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCollapsedSessionsOpen, setIsCollapsedSessionsOpen] = useState(false);
+  const collapsedSessionsRef = useRef<HTMLDivElement>(null);
+  const hasHydratedOnMount = useRef(false);
   const [runAiQuery] = useRunAiQueryMutation();
-  const { data: historyData, refetch: refetchHistory, isFetching: isHistoryFetching } = useGetAiHistoryQuery(
-    { limit: 20, sessionId },
-    { skip: !isHistoryOpen || !sessionId }
+  const [fetchSessionHistory] = useLazyGetAiHistoryQuery();
+  const { data: sessionsData, isFetching: isSessionsFetching } = useGetAiSessionsQuery(
+    undefined,
+    { skip: !canAccessAiReport }
   );
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    
-  ]);
+  const sessions = useMemo(() => sessionsData?.sessions ?? [], [sessionsData]);
+  const recentSessions = useMemo(() => sessions.slice(0, 8), [sessions]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const defaultPipelineId = process.env.NEXT_PUBLIC_DEFAULT_PIPELINE || "";
 
   const { data: teamMembersData, isLoading: isUsersLoading } = useGetTeamMembersQuery(
@@ -277,23 +265,81 @@ export default function AiReportModalShell({
   }, []);
 
   useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!collapsedSessionsRef.current) return;
+      if (!collapsedSessionsRef.current.contains(event.target as Node)) {
+        setIsCollapsedSessionsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  useEffect(() => {
     if (!sessionId || typeof window === "undefined") return;
     const url = new URL(window.location.href);
     url.searchParams.set("aiSessionId", sessionId);
     window.history.replaceState(null, "", url.toString());
   }, [sessionId]);
 
-  useEffect(() => {
-    if (historyData?.items) {
-      setHistoryItems(historyData.items);
+  const hydrateSession = async (targetSessionId: string) => {
+    setIsHydrating(true);
+    try {
+      const data = await fetchSessionHistory({
+        sessionId: targetSessionId,
+        sort: "asc",
+        limit: 100,
+      }).unwrap();
+
+      const hydrated: ChatMessage[] = data.items.flatMap((item) => [
+        {
+          id: `${item.id}-user`,
+          role: "user" as const,
+          content: item.queryText,
+        },
+        {
+          id: `${item.id}-assistant`,
+          role: "assistant" as const,
+          content: <AiReportResponseView response={item.response as AiFilterQueryResponse} />,
+        },
+      ]);
+
+      setMessages(hydrated);
+    } catch {
+      // leave messages empty if a session fails to hydrate
+    } finally {
+      setIsHydrating(false);
     }
-  }, [historyData]);
+  };
 
   useEffect(() => {
-    if (isHistoryOpen) {
-      refetchHistory();
+    if (hasHydratedOnMount.current || typeof window === "undefined") return;
+    hasHydratedOnMount.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const urlSessionId = params.get("aiSessionId");
+    if (urlSessionId) {
+      void hydrateSession(urlSessionId);
     }
-  }, [isHistoryOpen, refetchHistory]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSelectSession = (targetSessionId: string) => {
+    setIsCollapsedSessionsOpen(false);
+    if (targetSessionId === sessionId || isAiLoading) return;
+    setSessionId(targetSessionId);
+    setMessages([]);
+    void hydrateSession(targetSessionId);
+  };
+
+  const handleNewChat = () => {
+    if (isAiLoading) return;
+    setSessionId(createSessionId());
+    setMessages([]);
+    setQueryDisplay("");
+    setQueryInternal("");
+  };
 
   const handleSend = async () => {
     const trimmedDisplay = queryDisplay.trim();
@@ -315,7 +361,6 @@ export default function AiReportModalShell({
     setTriggerIndex(null);
     setTypedFragment("");
     closeMentionMenus();
-    onSend?.(trimmedDisplay);
     setIsAiLoading(true);
 
     try {
@@ -335,9 +380,6 @@ export default function AiReportModalShell({
         content: <AiReportResponseView response={queryData} />,
       };
       setMessages((prev) => [...prev, assistantMessage]);
-      if (isHistoryOpen) {
-        refetchHistory();
-      }
     } catch (runtimeError) {
       const message =
         runtimeError instanceof Error ? runtimeError.message : "Failed to process AI report query";
@@ -411,109 +453,193 @@ export default function AiReportModalShell({
 
   const isSuggestionsLoading =
     (activeMenu === "users" && isUsersLoading) || (activeMenu === "stages" && isStagesLoading);
-  const isComposerDisabled = !queryDisplay.trim() || loading || isAiLoading;
-  const fallbackResultContent = error ? (
-    <span className="text-red-600 dark:text-red-400">{error}</span>
-  ) : tableColumns.length > 0 ? (
-    <DynamicTable columns={tableColumns} rows={tableRows} />
-  ) : (
-    result
-  );
+  const isComposerDisabled = !queryDisplay.trim() || isAiLoading;
+
+  if (!canAccessAiReport) {
+    return (
+      <div className="flex h-[calc(100vh-12rem)] items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+        You don&apos;t have access to this page.
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-[calc(100vh-5rem)]">
-      {isHistoryOpen && (
-        <aside className="w-72 border-r border-gray-200 bg-white p-3 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-gray-500">
-            <span>History</span>
-            {isHistoryFetching && <VeryShortSpinnerPrimary />}
-          </div>
-          <div className="space-y-2 overflow-y-auto" style={{ maxHeight: "calc(100vh - 10rem)" }}>
-            {!isHistoryFetching && historyItems.length === 0 && (
-              <div className="rounded-lg border border-dashed border-gray-200 p-3 text-xs text-gray-500 dark:border-gray-700">
-                No history yet.
-              </div>
-            )}
-            {historyItems.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  if (item.response) {
-                    const historyTimestamp = Date.now().toString();
-                    setMessages((prev) => [
-                      ...prev,
-                      {
-                        id: `${historyTimestamp}-history-user`,
-                        role: "user",
-                        content: item.queryText,
-                      },
-                      {
-                        id: `${historyTimestamp}-history-assistant`,
-                        role: "assistant",
-                        content: <AiReportResponseView response={item.response as AiFilterQueryResponse} />,
-                      },
-                    ]);
-                    return;
-                  }
+    <div className="flex h-[calc(100vh-12rem)]">
+      <aside
+        className={`flex shrink-0 flex-col border-r border-gray-200 bg-white text-sm text-gray-700 transition-[width] duration-200 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 ${
+          isSidebarOpen ? "w-72 p-3" : "w-14 items-center p-2"
+        }`}
+      >
+        <div className={`mb-3 flex w-full items-center ${isSidebarOpen ? "justify-between" : "justify-center"}`}>
+          {isSidebarOpen && (
+            <span className="text-xs font-semibold uppercase text-gray-500">Chats</span>
+          )}
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen((open) => !open)}
+            aria-label={isSidebarOpen ? "Collapse conversations panel" : "Expand conversations panel"}
+            title={isSidebarOpen ? "Collapse" : "Expand"}
+            className="flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <svg
+              className={`h-4 w-4 transition-transform ${isSidebarOpen ? "" : "rotate-180"}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </button>
+        </div>
 
-                  setQueryDisplay(item.queryText);
-                  setQueryInternal(item.queryText);
-                }}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-              >
-                <div className="font-medium text-gray-800 dark:text-gray-100">
-                  {item.queryText}
-                </div>
-
-              </button>
-            ))}
-          </div>
-        </aside>
-      )}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="mb-4 flex items-start justify-between border-b border-gray-200 pb-3 dark:border-gray-800">
-          <div className="flex items-center gap-2">
+        {isSidebarOpen ? (
+          <>
             <button
               type="button"
-              onClick={() => {
-                const next = !isHistoryOpen;
-                setIsHistoryOpen(next);
-              }}
-              className="rounded-lg px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+              onClick={handleNewChat}
+              disabled={isAiLoading}
+              className="mb-3 w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
             >
-              {isHistoryOpen ? "Hide History" : "Show History"}
+              + New chat
             </button>
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-gray-500">
+              <span>Conversations</span>
+              {isSessionsFetching && <VeryShortSpinnerPrimary />}
+            </div>
+            <div className="space-y-2 overflow-y-auto" style={{ maxHeight: "calc(100vh - 18rem)" }}>
+              {!isSessionsFetching && sessions.length === 0 && (
+                <div className="rounded-lg border border-dashed border-gray-200 p-3 text-xs text-gray-500 dark:border-gray-700">
+                  No conversations yet.
+                </div>
+              )}
+              {sessions.map((session) => (
+                <button
+                  key={session.sessionId}
+                  type="button"
+                  disabled={isAiLoading}
+                  onClick={() => handleSelectSession(session.sessionId)}
+                  className={`w-full rounded-lg border px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50 ${
+                    session.sessionId === sessionId
+                      ? "border-brand-300 bg-brand-50 dark:border-brand-500/40 dark:bg-brand-500/10"
+                      : "border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <div className="line-clamp-2 font-medium text-gray-800 dark:text-gray-100">
+                    {session.title}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-gray-400">
+                    {formatDistanceToNow(new Date(session.lastMessageAt), { addSuffix: true })}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={handleNewChat}
+              disabled={isAiLoading}
+              aria-label="New chat"
+              title="New chat"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+
+            <div className="relative" ref={collapsedSessionsRef}>
+              <button
+                type="button"
+                onClick={() => setIsCollapsedSessionsOpen((open) => !open)}
+                aria-label="Recent conversations"
+                title="Recent conversations"
+                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" />
+                </svg>
+                {isSessionsFetching && (
+                  <span className="absolute -right-0.5 -top-0.5">
+                    <VeryShortSpinnerPrimary />
+                  </span>
+                )}
+              </button>
+
+              {isCollapsedSessionsOpen && (
+                <div className="absolute left-full top-0 z-50 ml-2 w-64 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                  <div className="px-3 pb-1 pt-2 text-xs font-semibold uppercase text-gray-500">
+                    Recent conversations
+                  </div>
+                  {recentSessions.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+                      No conversations yet.
+                    </div>
+                  ) : (
+                    <ul className="max-h-72 overflow-y-auto">
+                      {recentSessions.map((session) => (
+                        <li key={session.sessionId}>
+                          <button
+                            type="button"
+                            disabled={isAiLoading}
+                            onClick={() => handleSelectSession(session.sessionId)}
+                            className={`w-full px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50 ${
+                              session.sessionId === sessionId
+                                ? "bg-brand-50 dark:bg-brand-500/10"
+                                : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                            }`}
+                          >
+                            <div className="line-clamp-2 font-medium text-gray-800 dark:text-gray-100">
+                              {session.title}
+                            </div>
+                            <div className="mt-0.5 text-[11px] text-gray-400">
+                              {formatDistanceToNow(new Date(session.lastMessageAt), { addSuffix: true })}
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
+        )}
+      </aside>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="mb-4 flex items-start justify-center border-b border-gray-200 pb-3 dark:border-gray-800">
           <div className="text-center">
             <h4 className="text-xl font-semibold text-gray-900 dark:text-white">AI Report</h4>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Contacts assistant</p>
           </div>
-           <div className="w-8 h-4"></div>
-          
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto pb-28">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`max-w-3xl rounded-2xl px-4 py-3 text-sm wrap-break-word hyphens-auto whitespace-pre-wrap ${
-                message.role === "user"
-                  ? "ml-auto bg-brand-500 text-white"
-                  : "mr-auto border border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
-              }`}
-            >
-              {message.content}
-            </div>
-          ))}
-          {(loading || isAiLoading) && (
+          {isHydrating && (
             <div className="mr-auto max-w-3xl rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              Preparing report...
+              Loading conversation...
             </div>
           )}
-          {!isAiLoading && fallbackResultContent && (
+          {!isHydrating &&
+            messages.map((message) => (
+              <div
+                key={message.id}
+                className={`max-w-3xl rounded-2xl px-4 py-3 text-sm wrap-break-word hyphens-auto whitespace-pre-wrap ${
+                  message.role === "user"
+                    ? "ml-auto bg-brand-500 text-white"
+                    : "mr-auto border border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                }`}
+              >
+                {message.content}
+              </div>
+            ))}
+          {isAiLoading && (
             <div className="mr-auto max-w-3xl rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              {fallbackResultContent}
+              Preparing report...
             </div>
           )}
         </div>
@@ -621,7 +747,6 @@ export default function AiReportModalShell({
           )}
         </div>
       </div>
-
     </div>
   );
 }

@@ -35,10 +35,13 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
   } = useSortable({
     id: `contact-${contact._id}`,   // consistent ID format
     data,                           // pass stageId through
-    // Disable dnd-kit's sibling-shift preview animation. It was fighting
-    // with the virtualizer's own remeasurement during cross-column drags
-    // (each triggers a re-render that reruns the other), causing sustained
-    // main-thread thrashing instead of settling.
+    // dnd-kit's default sibling-shift preview animation re-measures/animates
+    // every sortable sibling on each index change. Combined with virtualized
+    // rows (whose mount/unmount and ResizeObserver-driven remeasurement is
+    // already firing during drag), this creates a re-render feedback loop
+    // that was interrupting drags before onDragEnd could resolve cleanly —
+    // breaking both the shift-preview AND the actual drop reorder. Disabling
+    // it trades the "gap opens" visual for a drag that reliably completes.
     animateLayoutChanges: () => false,
   });
 

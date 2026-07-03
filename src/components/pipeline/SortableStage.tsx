@@ -58,7 +58,7 @@ function SortableStageComponent(
       role="listitem"
       aria-label={`Stage: ${stage.name}`}
     >
-      <div className={`flex sticky justify-center items-center flex-col mb-2 rounded border border-gray-200 p-2.5 dark:border-gray-700 hover:shadow-md top-0 bg-white ${isFinalThree ? "text-white dark:text-white bg-success-500 dark:bg-success-600"  : "text-gray-800 dark:text-white/90 bg-white dark:bg-gray-800"}`}>
+      <div className={`flex sticky z-20 justify-center items-center flex-col mb-2 rounded-t border border-b-2 border-gray-200 border-b-gray-300 p-2.5 dark:border-gray-700 dark:border-b-gray-600 hover:shadow-md top-0 bg-white ${isFinalThree ? "text-white dark:text-white bg-success-500 dark:bg-success-600"  : "text-gray-800 dark:text-white/90 bg-white dark:bg-gray-800"}`}>
         <h4 className={`font-medium text-sm ${isFinalThree ? "text-white dark:text-white" : "text-gray-800 dark:text-white/90"}`}>
           {stage.name}
         </h4>

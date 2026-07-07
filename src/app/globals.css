@@ -218,15 +218,19 @@
     @apply relative font-normal font-outfit z-1 bg-gray-50;
   }
   /*
-    Default focus styling for text-like form controls, so every form gets
-    the brand focus ring without having to redeclare it per input. Lives in
-    @layer base, so any component's own focus: utility classes (e.g. a
-    borderless textarea meant to blend into a custom wrapper) still win —
-    Tailwind's utilities layer always outranks base.
+    Default border/focus styling for text-like form controls, so every form
+    gets a consistent border and the brand focus ring without redeclaring
+    it per input. Marked !important so it wins over the many forms that
+    still hardcode a plain 1px `border` utility — but that also means it
+    would steamroll a *deliberately* borderless input nested inside a
+    custom-bordered wrapper (e.g. a tag composer), since CSS reverses layer
+    priority for !important declarations (base ends up beating utilities
+    even when the component's own class is important too). Components that
+    need to opt out add the `plain-input` class.
   */
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-  select,
-  textarea {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(.plain-input),
+  select:not(.plain-input),
+  textarea:not(.plain-input) {
     @apply border-[1.5px]! focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:focus:border-brand-800;
   }
 }

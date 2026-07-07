@@ -660,6 +660,7 @@ export default function AiReportPageContent() {
               rows={2}
               placeholder="Ask about contacts, leads, totals, or date ranges..."
               className="
+                plain-input
                 w-full resize-none rounded-lg px-3 py-2 text-sm
                 border-none
                 focus:border-none

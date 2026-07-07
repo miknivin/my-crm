@@ -241,7 +241,7 @@ export default function AddContactForm({ onClose }: AddContactFormProps) {
                 }
               }}
               placeholder="Add a tag..."
-              className="w-full outline-none text-sm text-gray-800 bg-transparent placeholder:text-gray-400 dark:text-white/90 dark:placeholder:text-white/30"
+              className="plain-input w-full outline-none text-sm text-gray-800 bg-transparent placeholder:text-gray-400 dark:text-white/90 dark:placeholder:text-white/30"
               aria-label="Add new tag"
             />
             {tagError && <p className="text-red-500 text-sm mt-1">{tagError}</p>}

@@ -165,7 +165,7 @@ export default function EditPipelineForm({ pipelineId, onClose }: EditPipelineFo
       <h2 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
         Edit Pipeline
       </h2>
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-[85vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label
             htmlFor="name"

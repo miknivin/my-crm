@@ -105,7 +105,6 @@ export default function AddContactForm({ onClose }: AddContactFormProps) {
 
   return (
     <>
-    <div className="max-h-[80vh] overflow-y-auto">
       <h2 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
         Add New Contact
       </h2>
@@ -128,54 +127,83 @@ export default function AddContactForm({ onClose }: AddContactFormProps) {
             required
           />
         </div>
-        <div>
-          <label
-            htmlFor="email"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-          >
-            Email (Optional)
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+            >
+              Email (Optional)
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="phone"
+              className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+            >
+              Phone
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              required
+            />
+          </div>
         </div>
-        <div>
-          <label
-            htmlFor="phone"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-          >
-            Phone
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="businessName"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-          >
-            Business Name
-          </label>
-          <input
-            type="text"
-            id="businessName"
-            name="businessName"
-            value={formData.businessName}
-            onChange={handleInputChange}
-            className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="businessName"
+              className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+            >
+              Business Name
+            </label>
+            <input
+              type="text"
+              id="businessName"
+              name="businessName"
+              value={formData.businessName}
+              onChange={handleInputChange}
+              className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="stage"
+              className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
+            >
+              Stage
+            </label>
+            <select
+              id="stage"
+              name="stage"
+              value={formData.stage}
+              onChange={handleInputChange}
+              className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+              required
+            >
+              <option value="" disabled>
+                Select a stage
+              </option>
+              {stages.map((stage: any) => (
+                <option key={stage._id} value={stage._id}>
+                  {stage.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div>
           <label
@@ -221,31 +249,6 @@ export default function AddContactForm({ onClose }: AddContactFormProps) {
         </div>
         <div>
           <label
-            htmlFor="stage"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-          >
-            Stage
-          </label>
-          <select
-            id="stage"
-            name="stage"
-            value={formData.stage}
-            onChange={handleInputChange}
-            className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            required
-          >
-            <option value="" disabled>
-              Select a stage
-            </option>
-            {stages.map((stage: any) => (
-              <option key={stage._id} value={stage._id}>
-                {stage.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label
             htmlFor="notes"
             className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
           >
@@ -270,8 +273,6 @@ export default function AddContactForm({ onClose }: AddContactFormProps) {
           </Button>
         </div>
       </form>
-    </div>
-
     </>
   );
 }

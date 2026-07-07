@@ -217,6 +217,18 @@
   body {
     @apply relative font-normal font-outfit z-1 bg-gray-50;
   }
+  /*
+    Default focus styling for text-like form controls, so every form gets
+    the brand focus ring without having to redeclare it per input. Lives in
+    @layer base, so any component's own focus: utility classes (e.g. a
+    borderless textarea meant to blend into a custom wrapper) still win —
+    Tailwind's utilities layer always outranks base.
+  */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    @apply border-[1.5px]! focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:focus:border-brand-800;
+  }
 }
 
 @utility menu-item {

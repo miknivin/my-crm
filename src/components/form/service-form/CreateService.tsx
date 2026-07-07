@@ -96,7 +96,7 @@ export default function AddServiceForm({ onClose }: AddServiceFormProps) {
             value={formData.name}
             onChange={handleInputChange}
             placeholder="Website Development"
-            className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-brand-800"
             required
           />
         </div>
@@ -113,7 +113,7 @@ export default function AddServiceForm({ onClose }: AddServiceFormProps) {
             value={formData.category}
             onChange={handleInputChange}
             placeholder="Development"
-            className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-brand-800"
           />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -129,7 +129,7 @@ export default function AddServiceForm({ onClose }: AddServiceFormProps) {
               name="price"
               value={formData.price}
               onChange={handleInputChange}
-              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-brand-800"
               required
             />
           </div>
@@ -145,7 +145,7 @@ export default function AddServiceForm({ onClose }: AddServiceFormProps) {
               name="currency"
               value={formData.currency}
               onChange={handleInputChange}
-              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-brand-800"
             >
               <option value="INR">INR</option>
               <option value="USD">USD</option>
@@ -167,7 +167,7 @@ export default function AddServiceForm({ onClose }: AddServiceFormProps) {
               name="billingType"
               value={formData.billingType}
               onChange={handleInputChange}
-              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-brand-800"
             >
               <option value="one-time">One-time</option>
               <option value="monthly">Monthly</option>
@@ -191,7 +191,7 @@ export default function AddServiceForm({ onClose }: AddServiceFormProps) {
               name="taxPercent"
               value={formData.taxPercent}
               onChange={handleInputChange}
-              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className="dark:bg-dark-900 h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-brand-800"
             />
           </div>
         </div>
@@ -208,7 +208,7 @@ export default function AddServiceForm({ onClose }: AddServiceFormProps) {
             value={formData.description}
             onChange={handleInputChange}
             rows={4}
-            className="dark:bg-dark-900 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="dark:bg-dark-900 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-brand-800"
             placeholder="Short description for proposals."
           />
         </div>

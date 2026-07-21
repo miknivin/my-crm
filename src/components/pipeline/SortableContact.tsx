@@ -14,6 +14,7 @@ import { RootState } from "@/app/redux/rootReducer";
 import { useSearchParams } from "next/navigation";
 import { Contact } from "./types";
 import InvoiceIcon from "../ui/flowbiteIcons/InvoiceIcon";
+import ReceiptIcon from "../ui/flowbiteIcons/ReceiptIcon";
 import TaskIcon from "../ui/flowbiteIcons/TaskIcon";
 import AppTooltip from "../ui/tooltip/AppTooltip";
 
@@ -22,10 +23,11 @@ interface SortableContactProps {
   data: { stageId: string };   // required for drag context
   onOpenTask?: (contact: Contact) => void;
   onOpenProposal?: (contact: Contact) => void;
+  onOpenInvoice?: (contact: Contact) => void;
   onOpenQR?: (contact: Contact) => void;
 }
 
-function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, onOpenQR }: SortableContactProps) {
+function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, onOpenInvoice, onOpenQR }: SortableContactProps) {
   const {
     attributes,
     listeners,
@@ -197,6 +199,18 @@ function SortableContactComponent({ contact, data, onOpenTask, onOpenProposal, o
                   aria-label={`Generate proposal for ${contact.name || "contact"}`}
                 >
                   <InvoiceIcon className="w-4 h-4" />
+                </button>
+              </AppTooltip>
+            )}
+            {canGenerateProposal && (
+              <AppTooltip content="Create invoice">
+                <button
+                  type="button"
+                  onClick={() => onOpenInvoice?.(contact)}
+                  className="inline-flex items-center border-l px-1.5 py-1 text-sm font-medium text-gray-900 bg-transparent border-t border-b border-gray-900 hover:bg-gray-200 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700"
+                  aria-label={`Create invoice for ${contact.name || "contact"}`}
+                >
+                  <ReceiptIcon className="w-4 h-4" />
                 </button>
               </AppTooltip>
             )}

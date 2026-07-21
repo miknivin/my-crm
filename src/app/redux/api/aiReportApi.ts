@@ -15,8 +15,6 @@ type AiHistoryResponse = {
   items: AiHistoryItem[];
 };
 
-type AiQueryResponse = Record<string, unknown>;
-
 type AiSessionListItem = {
   sessionId: string;
   title: string;
@@ -36,15 +34,10 @@ export const aiReportApi = createApi({
     credentials: "include",
   }),
   tagTypes: ["AiSessions"],
+  // NOTE: the run call streams SSE, which RTK Query can't consume — it
+  // lives in src/helpers/aiReportStream.ts; on completion the caller
+  // dispatches aiReportApi.util.invalidateTags(["AiSessions"]).
   endpoints: (builder) => ({
-    runAiQuery: builder.mutation<AiQueryResponse, { query: string; queryDisplay?: string; sessionId?: string }>({
-      query: (body) => ({
-        url: "/run",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: ["AiSessions"],
-    }),
     getAiHistory: builder.query<AiHistoryResponse, { limit?: number; sessionId?: string; sort?: "asc" | "desc" }>({
       query: ({ limit = 20, sessionId, sort }) => ({
         url: `/history?limit=${limit}${sessionId ? `&sessionId=${encodeURIComponent(sessionId)}` : ""}${sort ? `&sort=${sort}` : ""}`,
@@ -62,7 +55,6 @@ export const aiReportApi = createApi({
 });
 
 export const {
-  useRunAiQueryMutation,
   useGetAiHistoryQuery,
   useLazyGetAiHistoryQuery,
   useGetAiSessionsQuery,

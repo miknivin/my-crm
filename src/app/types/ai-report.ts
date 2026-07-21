@@ -10,15 +10,20 @@ export type AiChart = {
 
 export type AiFilterUiType = "table" | "stat_card" | "stat_table" | "chart_trend";
 
+export type AiPlanOutcome = "ok" | "unsupported" | "needs_clarification";
+
 export type AiFilterQueryStep = {
+  id?: string;
   type: "find" | "aggregate";
+  toolName?: string;
+  purpose?: string;
   filterActions?: Array<{ method: string; args?: unknown[] }>;
   projection?: Record<string, number>;
   sort?: Record<string, number>;
-  limit?: number;
-  populate?: string[];
+  limit?: number | null;
+  populate?: unknown[];
   aggregateActions?: Array<{ method: string; args?: unknown[] }>;
-  ui?: { type: AiFilterUiType; title?: string };
+  ui?: { type: AiFilterUiType; title?: string | null };
   reasoning?: string;
 };
 
@@ -37,6 +42,8 @@ export type AiFilterQueryResult = {
 export type AiFilterQueryResponse = {
   success: boolean;
   sessionId?: string;
+  outcome?: AiPlanOutcome;
+  explanation?: string;
   querySpec?: { steps: AiFilterQueryStep[] };
   toolRequest?: Record<string, unknown>;
   results?: AiFilterQueryResult[];

@@ -7,7 +7,6 @@ import ContactsMetrics from "@/components/ecommerce/ContactsMetrics";
 import MonthlyTarget from "@/components/ecommerce/MonthlyTarget";
 import Calendar from "@/components/calendar/Calendar";
 import ContactTableTwo from "@/components/tables/ContactTableTwo";
-import LeavesTableTwo from "@/components/tables/LeavesTableTwo";
 import UsersTableTwo from "@/components/tables/UsersTableTwo";
 import ShortSpinnerPrimary from "@/components/ui/loaders/ShortSpinnerPrimary";
 import PageBreadcrumb from "@/components/common/PageBreadCrumb";
@@ -78,9 +77,6 @@ export default function Page() {
 
       <div className="col-span-12 xl:col-span-12">
         {user?.role === "team_member" ? <ContactTableTwo /> : <UsersTableTwo />}
-      </div>
-      <div className="col-span-12 xl:col-span-12">
-        <LeavesTableTwo />
       </div>
     </div>
   );

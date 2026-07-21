@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/redux/rootReducer";
@@ -81,7 +82,12 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
         <span className="mr-3 overflow-hidden rounded-full h-10 w-10 flex items-center justify-center bg-blue-200 dark:bg-blue-400 text-gray-700 dark:text-gray-800 font-medium text-lg">
-          {initials}
+          {user?.avatar?.url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatar.url} alt={user.name || "Avatar"} className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">{user?.name}</span>
@@ -120,9 +126,33 @@ export default function UserDropdown() {
           </span>
         </div>
 
+        <Link
+          href="/settings"
+          onClick={closeDropdown}
+          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        >
+          <svg
+            className="stroke-gray-500 group-hover:stroke-gray-700 dark:group-hover:stroke-gray-300"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M10.5 3.75a1.5 1.5 0 0 1 3 0v.19c0 .6.36 1.14.9 1.4.13.06.26.13.39.2.55.32 1.22.32 1.75-.02l.16-.1a1.5 1.5 0 0 1 2.06.55l.75 1.3a1.5 1.5 0 0 1-.55 2.05l-.16.1c-.53.31-.83.9-.8 1.52.01.15.01.3 0 .44-.03.62.27 1.21.8 1.52l.16.1a1.5 1.5 0 0 1 .55 2.05l-.75 1.3a1.5 1.5 0 0 1-2.06.55l-.16-.1a1.5 1.5 0 0 0-1.75-.02c-.13.07-.26.14-.39.2-.54.26-.9.8-.9 1.4v.19a1.5 1.5 0 0 1-3 0v-.19c0-.6-.36-1.14-.9-1.4a5.9 5.9 0 0 1-.39-.2 1.5 1.5 0 0 0-1.75.02l-.16.1a1.5 1.5 0 0 1-2.06-.55l-.75-1.3a1.5 1.5 0 0 1 .55-2.05l.16-.1c.53-.31.83-.9.8-1.52a5.6 5.6 0 0 1 0-.44c.03-.62-.27-1.21-.8-1.52l-.16-.1a1.5 1.5 0 0 1-.55-2.05l.75-1.3a1.5 1.5 0 0 1 2.06-.55l.16.1c.53.32 1.2.32 1.75 0 .13-.07.26-.14.39-.2.54-.26.9-.8.9-1.4v-.19Z"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Settings
+        </Link>
+
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+          className="flex items-center gap-3 px-3 py-2 mt-1 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
           <svg
             className="fill-gray-500 group-hover:fill-gray-700 dark:group-hover:fill-gray-300"

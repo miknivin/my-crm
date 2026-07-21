@@ -10,6 +10,8 @@ import { dashboardApi } from "./api/dashboardApi";
 import { serviceApi } from "./api/serviceApi";
 import { proposalApi } from "./api/proposalApi";
 import { aiReportApi } from "./api/aiReportApi";
+import { settingsApi } from "./api/settingsApi";
+import { invoiceApi } from "./api/invoiceApi";
 
 const rootReducer = combineReducers({
   user: userSlice.reducer,
@@ -21,7 +23,9 @@ const rootReducer = combineReducers({
   [dashboardApi.reducerPath]:dashboardApi.reducer,
   [serviceApi.reducerPath]: serviceApi.reducer,
   [proposalApi.reducerPath]: proposalApi.reducer,
-  [aiReportApi.reducerPath]: aiReportApi.reducer
+  [aiReportApi.reducerPath]: aiReportApi.reducer,
+  [settingsApi.reducerPath]: settingsApi.reducer,
+  [invoiceApi.reducerPath]: invoiceApi.reducer
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

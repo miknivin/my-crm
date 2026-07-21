@@ -49,7 +49,8 @@ export default function ContactsHeader() {
                 <div>Filter</div>
               </div>
             </Button>
-            {canAccessAiReport && (
+            {/* AI Report button temporarily hidden — re-enable by restoring `canAccessAiReport &&`. */}
+            {false && canAccessAiReport && (
               <Button size="sm" variant="outline" onClick={() => router.push("/ai-report")}>
                 AI Report
               </Button>

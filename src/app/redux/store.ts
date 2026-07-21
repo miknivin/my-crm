@@ -9,12 +9,14 @@ import { dashboardApi } from "./api/dashboardApi";
 import { serviceApi } from "./api/serviceApi";
 import { proposalApi } from "./api/proposalApi";
 import { aiReportApi } from "./api/aiReportApi";
+import { settingsApi } from "./api/settingsApi";
+import { invoiceApi } from "./api/invoiceApi";
 
 const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
-      userApi.middleware, 
+      userApi.middleware,
       authApi.middleware,
       contactApi.middleware,
       pipelineApi.middleware,
@@ -22,7 +24,9 @@ const store = configureStore({
       dashboardApi.middleware,
       serviceApi.middleware,
       proposalApi.middleware,
-      aiReportApi.middleware
+      aiReportApi.middleware,
+      settingsApi.middleware,
+      invoiceApi.middleware
     ),
 });
 

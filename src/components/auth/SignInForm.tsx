@@ -1,6 +1,5 @@
 "use client";
 import { useLoginMutation } from "@/app/redux/api/authApi";
-import Checkbox from "@/components/form/input/Checkbox";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import Button from "@/components/ui/button/Button";
@@ -19,7 +18,6 @@ interface RootState {
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -165,13 +163,7 @@ export default function SignInForm() {
                 {error && (
                   <div className="text-sm text-error-500">{error}</div>
                 )}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Checkbox checked={isChecked} onChange={setIsChecked} />
-                    <span className="block font-normal text-gray-700 text-theme-sm dark:text-gray-400">
-                      Keep me logged in
-                    </span>
-                  </div>
+                <div className="flex items-center justify-end">
                   <Link
                     href="/forgot-password"
                     className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"

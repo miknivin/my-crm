@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import UpArrowIcon from "../ui/flowbiteIcons/UpArrow";
 import { useGetTeamMembersQuery } from "@/app/redux/api/userApi";
 import { useGetPipelineByIdQuery } from "@/app/redux/api/pipelineApi";
@@ -12,10 +12,16 @@ import VeryShortSpinnerPrimary from "@/components/ui/loaders/veryShortSpinnerPri
 import { AiFilterQueryResponse } from "@/app/types/ai-report";
 import { RootState } from "@/app/redux/rootReducer";
 import {
+  aiReportApi,
   useGetAiSessionsQuery,
   useLazyGetAiHistoryQuery,
-  useRunAiQueryMutation,
 } from "@/app/redux/api/aiReportApi";
+import { runAiQueryStream } from "@/helpers/aiReportStream";
+import AiReportLiveMessage, {
+  createLiveMessage,
+  LiveAiMessage,
+} from "./AiReportLiveMessage";
+import type { AppDispatch } from "@/app/redux/store";
 
 type ChatMessage = {
   id: string;
@@ -120,6 +126,9 @@ export default function AiReportPageContent() {
   const [selectedMenuChip, setSelectedMenuChip] = useState<MentionMenuType | null>(null);
   const [menuDropdownOpen, setMenuDropdownOpen] = useState(false);
   const [suggestionDropdownOpen, setSuggestionDropdownOpen] = useState(false);
+  // Keyboard-highlighted row shared by both mention dropdowns; the
+  // textarea keeps focus, so arrow/enter handling lives in handleKeyDown.
+  const [highlightIndex, setHighlightIndex] = useState(0);
   const [triggerIndex, setTriggerIndex] = useState<number | null>(null);
   const [caretIndex, setCaretIndex] = useState(0);
   const [typedFragment, setTypedFragment] = useState("");
@@ -131,7 +140,13 @@ export default function AiReportPageContent() {
   const [isCollapsedSessionsOpen, setIsCollapsedSessionsOpen] = useState(false);
   const collapsedSessionsRef = useRef<HTMLDivElement>(null);
   const hasHydratedOnMount = useRef(false);
-  const [runAiQuery] = useRunAiQueryMutation();
+  const dispatch = useDispatch<AppDispatch>();
+  const [liveMessage, setLiveMessage] = useState<LiveAiMessage | null>(null);
+  // Mirror of liveMessage so stream handlers can build on the latest state
+  // without stale-closure issues, and so we can freeze the final state
+  // into the message list when the stream ends.
+  const liveRef = useRef<LiveAiMessage | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const [fetchSessionHistory] = useLazyGetAiHistoryQuery();
   const { data: sessionsData, isFetching: isSessionsFetching } = useGetAiSessionsQuery(
     undefined,
@@ -276,6 +291,19 @@ export default function AiReportPageContent() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  // Reset the highlighted row whenever a dropdown opens or its item list
+  // refilters, and keep the highlighted suggestion scrolled into view.
+  useEffect(() => {
+    setHighlightIndex(0);
+  }, [menuDropdownOpen, suggestionDropdownOpen, activeMenu, typedFragment]);
+
+  useEffect(() => {
+    if (!suggestionDropdownOpen) return;
+    document
+      .getElementById(`ai-mention-suggestion-${highlightIndex}`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [highlightIndex, suggestionDropdownOpen]);
+
   useEffect(() => {
     if (!sessionId || typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -341,6 +369,16 @@ export default function AiReportPageContent() {
     setQueryInternal("");
   };
 
+  const updateLive = (updater: (prev: LiveAiMessage) => LiveAiMessage) => {
+    const next = updater(liveRef.current ?? createLiveMessage());
+    liveRef.current = next;
+    setLiveMessage(next);
+  };
+
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
   const handleSend = async () => {
     const trimmedDisplay = queryDisplay.trim();
     const trimmedInternal = queryInternal.trim() || trimmedDisplay;
@@ -363,24 +401,80 @@ export default function AiReportPageContent() {
     closeMentionMenus();
     setIsAiLoading(true);
 
-    try {
-      const queryData = (await runAiQuery({
-        query: trimmedInternal,
-        queryDisplay: trimmedDisplay,
-        sessionId,
-      }).unwrap()) as AiFilterQueryResponse;
+    const initial = createLiveMessage();
+    liveRef.current = initial;
+    setLiveMessage(initial);
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-      if (queryData.sessionId && queryData.sessionId !== sessionId) {
-        setSessionId(queryData.sessionId);
+    try {
+      await runAiQueryStream(
+        { query: trimmedInternal, queryDisplay: trimmedDisplay, sessionId },
+        {
+          onSession: ({ sessionId: serverSessionId }) => {
+            if (serverSessionId && serverSessionId !== sessionId) {
+              setSessionId(serverSessionId);
+            }
+          },
+          onPlan: ({ outcome, steps }) =>
+            updateLive((prev) => ({
+              ...prev,
+              status: steps.length > 0 ? "running" : "explaining",
+              outcome,
+              planSteps: steps.map((step) => ({ ...step, status: "pending" as const })),
+            })),
+          onStepStart: ({ id }) =>
+            updateLive((prev) => ({
+              ...prev,
+              planSteps: prev.planSteps.map((step) =>
+                step.id === id ? { ...step, status: "running" } : step
+              ),
+            })),
+          onStepResult: (result) =>
+            updateLive((prev) => ({
+              ...prev,
+              planSteps: prev.planSteps.map((step) =>
+                step.id === result.id ? { ...step, status: "done" } : step
+              ),
+              results: [...prev.results, { step: result.step, data: result.data, meta: result.meta }],
+            })),
+          onStepError: ({ id, message }) =>
+            updateLive((prev) => ({
+              ...prev,
+              planSteps: prev.planSteps.map((step) =>
+                step.id === id ? { ...step, status: "error", errorMessage: message } : step
+              ),
+            })),
+          onTextDelta: ({ delta }) =>
+            updateLive((prev) => ({
+              ...prev,
+              status: "explaining",
+              explanation: prev.explanation + delta,
+            })),
+          onError: ({ message }) =>
+            updateLive((prev) => ({ ...prev, status: "error", errorMessage: message })),
+        },
+        controller.signal
+      );
+
+      // Freeze the final live state into the permanent message list.
+      const final = liveRef.current;
+      if (final) {
+        const finalized: LiveAiMessage = {
+          ...final,
+          status: final.status === "error" ? "error" : "done",
+        };
+        const assistantMessage: ChatMessage = {
+          id: `${timestamp}-assistant`,
+          role: "assistant",
+          content: <AiReportLiveMessage live={finalized} />,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
       }
 
-      const assistantMessage: ChatMessage = {
-        id: `${timestamp}-assistant`,
-        role: "assistant",
-        content: <AiReportResponseView response={queryData} />,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      dispatch(aiReportApi.util.invalidateTags(["AiSessions"]));
     } catch (runtimeError) {
+      if (controller.signal.aborted) return;
       const message =
         runtimeError instanceof Error ? runtimeError.message : "Failed to process AI report query";
       const assistantMessage: ChatMessage = {
@@ -390,6 +484,9 @@ export default function AiReportPageContent() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } finally {
+      liveRef.current = null;
+      setLiveMessage(null);
+      abortRef.current = null;
       setIsAiLoading(false);
     }
   };
@@ -426,6 +523,30 @@ export default function AiReportPageContent() {
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === "Escape") {
       closeMentionMenus();
+      return;
+    }
+
+    const isDropdownOpen = menuDropdownOpen || suggestionDropdownOpen;
+
+    if (isDropdownOpen && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+      event.preventDefault();
+      const count = menuDropdownOpen ? MENTION_MENUS.length : suggestionItems.length;
+      if (count === 0) return;
+      setHighlightIndex((prev) =>
+        event.key === "ArrowDown" ? (prev + 1) % count : (prev - 1 + count) % count
+      );
+      return;
+    }
+
+    if (isDropdownOpen && (event.key === "Enter" || event.key === "Tab")) {
+      event.preventDefault();
+      if (menuDropdownOpen) {
+        const menu = MENTION_MENUS[highlightIndex];
+        if (menu) handleMenuSelect(menu.key);
+      } else {
+        const item = suggestionItems[highlightIndex];
+        if (item) handleSuggestionSelect(item);
+      }
       return;
     }
 
@@ -637,9 +758,9 @@ export default function AiReportPageContent() {
                 {message.content}
               </div>
             ))}
-          {isAiLoading && (
+          {liveMessage && (
             <div className="mr-auto max-w-3xl rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              Preparing report...
+              <AiReportLiveMessage live={liveMessage} />
             </div>
           )}
         </div>
@@ -703,12 +824,17 @@ export default function AiReportPageContent() {
               className="absolute z-50 mt-1 w-48 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
               style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
             >
-              <ul className="py-1 text-sm">
-                {MENTION_MENUS.map((menu) => (
+              <ul className="py-1 text-sm" role="listbox" aria-label="Mention type">
+                {MENTION_MENUS.map((menu, index) => (
                   <li key={menu.key}>
                     <button
                       type="button"
-                      className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+                      role="option"
+                      aria-selected={index === highlightIndex}
+                      className={`w-full px-3 py-2 text-left text-gray-700 dark:text-gray-200 ${
+                        index === highlightIndex ? "bg-gray-100 dark:bg-gray-800" : ""
+                      }`}
+                      onMouseEnter={() => setHighlightIndex(index)}
                       onClick={() => handleMenuSelect(menu.key)}
                     >
                       {menu.label}
@@ -724,7 +850,7 @@ export default function AiReportPageContent() {
               className="absolute z-50 mt-1 max-h-60 w-72 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
               style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
             >
-              <ul className="py-1 text-sm">
+              <ul className="py-1 text-sm" role="listbox" aria-label="Mention suggestions">
                 {isSuggestionsLoading && (
                   <li className="px-3 py-2 text-gray-500 dark:text-gray-400">Loading...</li>
                 )}
@@ -732,11 +858,17 @@ export default function AiReportPageContent() {
                   <li className="px-3 py-2 text-gray-500 dark:text-gray-400">No results</li>
                 )}
                 {!isSuggestionsLoading &&
-                  suggestionItems.map((item) => (
+                  suggestionItems.map((item, index) => (
                     <li key={`${item.menu}-${item.id}`}>
                       <button
                         type="button"
-                        className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+                        id={`ai-mention-suggestion-${index}`}
+                        role="option"
+                        aria-selected={index === highlightIndex}
+                        className={`w-full px-3 py-2 text-left text-gray-700 dark:text-gray-200 ${
+                          index === highlightIndex ? "bg-gray-100 dark:bg-gray-800" : ""
+                        }`}
+                        onMouseEnter={() => setHighlightIndex(index)}
                         onClick={() => handleSuggestionSelect(item)}
                       >
                         {item.label}

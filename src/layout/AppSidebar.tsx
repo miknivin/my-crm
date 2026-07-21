@@ -21,6 +21,8 @@ import { RootState } from "@/app/redux/rootReducer";
 import ServicesIcon from "@/components/ui/flowbiteIcons/ServicesIcon";
 import { getLogoSrc } from "@/app/lib/utils/logo";
 import TaskIcon from "@/components/ui/flowbiteIcons/TaskIcon";
+import InvoiceIcon from "@/components/ui/flowbiteIcons/InvoiceIcon";
+import SettingsIcon from "@/components/ui/flowbiteIcons/SettingsIcon";
 
 type NavItem = {
   name: string;
@@ -70,6 +72,16 @@ const getNavItems = (isMobile: boolean): NavItem[] => [
     name: "Services",
     icon: <ServicesIcon />,
     path: "/services",
+  },
+  {
+    name: "Invoices",
+    icon: <InvoiceIcon className="h-5 w-5" />,
+    path: "/invoices",
+  },
+  {
+    name: "Settings",
+    icon: <SettingsIcon className="h-5 w-5" />,
+    path: "/settings",
   },
 ];
 
@@ -125,7 +137,7 @@ const AppSidebar: React.FC = () => {
 
   const filteredNavItems = navItems.filter((item) => {
     if (user?.role === "user") {
-      return ["Calendar", "Leave"].includes(item.name);
+      return ["Calendar", "Leave", "Settings"].includes(item.name);
     }
     if (user?.role === "team_member") {
       return item.name !== "Users"; // Hide "Users" for team_member

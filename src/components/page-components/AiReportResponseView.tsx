@@ -203,7 +203,7 @@ const renderStep = (
   const statSummaries =
     showStats && result?.data?.length
       ? result.data
-          .map((row) => buildStatCardSummary(row, ui.title, replacements))
+          .map((row) => buildStatCardSummary(row, ui.title ?? undefined, replacements))
           .filter((summary): summary is Record<string, string | number> => Boolean(summary))
       : [];
 
@@ -305,6 +305,11 @@ export default function AiReportResponseView({ response }: Props) {
   return (
     <div className="space-y-3">
       {items.map((item, index) => renderStep(item, index, replacements))}
+      {response.explanation && (
+        <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+          {response.explanation}
+        </p>
+      )}
     </div>
   );
 }

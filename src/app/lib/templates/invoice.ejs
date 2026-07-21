@@ -1,0 +1,150 @@
+<!doctype html>
+<%
+  const inv = typeof data !== "undefined" ? data : {};
+  const company = inv.company || {};
+  const bank = company.bankDetails || {};
+  const billTo = inv.billTo || {};
+  const items = Array.isArray(inv.items) ? inv.items : [];
+  const symbol = inv.currencySymbol || "";
+  const formatMoney = (value) => `${symbol}${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+%>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Invoice <%= inv.invoiceNumber %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      body { font-family: "Inter", sans-serif; }
+      @page { margin: 0; }
+    </style>
+  </head>
+  <body class="bg-white text-gray-800">
+    <div class="relative mx-auto min-h-[1120px] w-[794px] px-14 py-12">
+      <% if (inv.isPaid) { %>
+        <div class="pointer-events-none absolute right-16 top-40 rotate-[-18deg] rounded-lg border-4 border-green-600 px-6 py-2 text-4xl font-extrabold uppercase tracking-widest text-green-600 opacity-70">
+          Paid
+        </div>
+      <% } else if (inv.isCancelled) { %>
+        <div class="pointer-events-none absolute right-16 top-40 rotate-[-18deg] rounded-lg border-4 border-red-600 px-6 py-2 text-4xl font-extrabold uppercase tracking-widest text-red-600 opacity-70">
+          Cancelled
+        </div>
+      <% } %>
+
+      <!-- Header -->
+      <div class="flex items-start justify-between border-b-2 border-gray-900 pb-6">
+        <div class="flex items-center gap-4">
+          <% if (company.logoUrl) { %>
+            <img src="<%= company.logoUrl %>" alt="<%= company.name %>" class="h-16 w-16 object-contain" />
+          <% } %>
+          <div>
+            <div class="text-xl font-bold text-gray-900"><%= company.name || "Your Company" %></div>
+            <% if (company.address) { %><div class="max-w-xs text-xs text-gray-500 whitespace-pre-line"><%= company.address %></div><% } %>
+            <div class="mt-1 text-xs text-gray-500">
+              <% if (company.email) { %><span><%= company.email %></span><% } %>
+              <% if (company.phone) { %><span> &middot; <%= company.phone %></span><% } %>
+            </div>
+            <% if (company.taxId) { %><div class="text-xs text-gray-500">Tax ID: <%= company.taxId %></div><% } %>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-3xl font-extrabold uppercase tracking-wide text-gray-900">Invoice</div>
+          <div class="mt-1 text-sm font-medium text-gray-700"><%= inv.invoiceNumber %></div>
+          <div class="mt-2 inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-700">
+            <%= inv.statusLabel %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta -->
+      <div class="mt-6 flex justify-between">
+        <div>
+          <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">Bill To</div>
+          <div class="mt-1 text-sm font-semibold text-gray-900"><%= billTo.name || "Client" %></div>
+          <% if (billTo.businessName) { %><div class="text-xs text-gray-500"><%= billTo.businessName %></div><% } %>
+          <% if (billTo.email) { %><div class="text-xs text-gray-500"><%= billTo.email %></div><% } %>
+          <% if (billTo.phone) { %><div class="text-xs text-gray-500"><%= billTo.phone %></div><% } %>
+        </div>
+        <div class="text-right text-sm">
+          <div><span class="text-gray-400">Issue Date: </span><span class="font-medium text-gray-800"><%= inv.issueDate %></span></div>
+          <div class="mt-1"><span class="text-gray-400">Due Date: </span><span class="font-medium text-gray-800"><%= inv.dueDate %></span></div>
+          <% if (inv.paymentTerms) { %>
+            <div class="mt-1"><span class="text-gray-400">Terms: </span><span class="font-medium text-gray-800"><%= inv.paymentTerms %></span></div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <table class="mt-8 w-full border-collapse text-sm">
+        <thead>
+          <tr class="border-b-2 border-gray-900 text-left text-xs uppercase tracking-wide text-gray-500">
+            <th class="py-2 pr-2">Description</th>
+            <th class="py-2 px-2 text-right">Qty</th>
+            <th class="py-2 px-2 text-right">Rate</th>
+            <th class="py-2 px-2 text-right">Tax</th>
+            <th class="py-2 pl-2 text-right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach((item) => { %>
+            <tr class="border-b border-gray-200 align-top">
+              <td class="py-3 pr-2">
+                <div class="font-medium text-gray-900"><%= item.name %></div>
+                <% if (item.description) { %><div class="text-xs text-gray-500"><%= item.description %></div><% } %>
+              </td>
+              <td class="py-3 px-2 text-right text-gray-700"><%= item.quantity %></td>
+              <td class="py-3 px-2 text-right text-gray-700"><%= formatMoney(item.unitPrice) %></td>
+              <td class="py-3 px-2 text-right text-gray-700"><%= item.taxPercent %>%</td>
+              <td class="py-3 pl-2 text-right font-medium text-gray-900"><%= formatMoney(item.total) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <!-- Totals -->
+      <div class="mt-4 flex justify-end">
+        <div class="w-64 space-y-1.5 text-sm">
+          <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="text-gray-800"><%= formatMoney(inv.subtotal) %></span></div>
+          <% if (inv.discount && inv.discount.amount) { %>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Discount<% if (inv.discount.type === "percent") { %> (<%= inv.discount.value %>%)<% } %></span>
+              <span class="text-gray-800">-<%= formatMoney(inv.discount.amount) %></span>
+            </div>
+          <% } %>
+          <div class="flex justify-between"><span class="text-gray-500">Tax</span><span class="text-gray-800"><%= formatMoney(inv.taxTotal) %></span></div>
+          <div class="flex justify-between border-t border-gray-300 pt-1.5 text-base font-bold text-gray-900">
+            <span>Total</span><span><%= formatMoney(inv.total) %></span>
+          </div>
+          <% if (inv.amountPaid > 0) { %>
+            <div class="flex justify-between text-gray-500"><span>Amount Paid</span><span>-<%= formatMoney(inv.amountPaid) %></span></div>
+            <div class="flex justify-between border-t border-gray-300 pt-1.5 text-base font-bold text-gray-900">
+              <span>Balance Due</span><span><%= formatMoney(inv.balanceDue) %></span>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Payment details -->
+      <% if (bank.accountNumber || bank.upiId) { %>
+        <div class="mt-10 rounded-lg bg-gray-50 p-4 text-xs text-gray-600">
+          <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Payment Details</div>
+          <% if (bank.accountName) { %><div>Account Name: <%= bank.accountName %></div><% } %>
+          <% if (bank.accountNumber) { %><div>Account No: <%= bank.accountNumber %></div><% } %>
+          <% if (bank.bankName) { %><div>Bank: <%= bank.bankName %></div><% } %>
+          <% if (bank.ifsc) { %><div>IFSC: <%= bank.ifsc %></div><% } %>
+          <% if (bank.upiId) { %><div>UPI ID: <%= bank.upiId %></div><% } %>
+        </div>
+      <% } %>
+
+      <!-- Notes -->
+      <% if (inv.notes) { %>
+        <div class="mt-6 text-xs text-gray-500 whitespace-pre-line"><%= inv.notes %></div>
+      <% } %>
+
+      <div class="mt-12 border-t border-gray-200 pt-4 text-center text-[10px] text-gray-400">
+        <%= company.name || "" %><% if (company.website) { %> &middot; <%= company.website %><% } %>
+      </div>
+    </div>
+  </body>
+</html>

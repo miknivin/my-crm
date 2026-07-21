@@ -12,6 +12,7 @@ import ShortSpinnerPrimary from "@/components/ui/loaders/ShortSpinnerPrimary";
 import { Modal } from "@/components/ui/modal";
 import QRCodeModalContent from "@/components/qr-code/QRCodeModalContent";
 import GenerateProposalForm from "@/components/form/proposal-form/GenerateProposalForm";
+import CreateInvoiceForm from "@/components/form/invoice-form/CreateInvoiceForm";
 
 import SortableContact from "./SortableContact";
 import SortableStage from "./SortableStage";
@@ -44,6 +45,7 @@ interface ContactListProps {
   sortableData: { stageId: string };
   onOpenTask: (contact: Contact) => void;
   onOpenProposal: (contact: Contact) => void;
+  onOpenInvoice: (contact: Contact) => void;
   onOpenQR: (contact: Contact) => void;
 }
 
@@ -63,6 +65,7 @@ const VirtualizedContactList = memo(function VirtualizedContactList({
   sortableData,
   onOpenTask,
   onOpenProposal,
+  onOpenInvoice,
   onOpenQR,
   scrollElementRef,
 }: VirtualizedContactListProps) {
@@ -111,6 +114,7 @@ const VirtualizedContactList = memo(function VirtualizedContactList({
                 data={sortableData}
                 onOpenTask={onOpenTask}
                 onOpenProposal={onOpenProposal}
+                onOpenInvoice={onOpenInvoice}
                 onOpenQR={onOpenQR}
               />
             </div>
@@ -126,6 +130,7 @@ function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: Stag
   const { hydrateStage, requestNextPage } = useBoardActions();
   const [taskContact, setTaskContact] = useState<Contact | null>(null);
   const [proposalContact, setProposalContact] = useState<Contact | null>(null);
+  const [invoiceContact, setInvoiceContact] = useState<Contact | null>(null);
   const [qrContact, setQrContact] = useState<Contact | null>(null);
 
   const limit = 10;
@@ -200,6 +205,7 @@ function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: Stag
           sortableData={sortableData}
           onOpenTask={setTaskContact}
           onOpenProposal={setProposalContact}
+          onOpenInvoice={setInvoiceContact}
           onOpenQR={setQrContact}
           scrollElementRef={scrollContainerRef}
         />
@@ -221,6 +227,14 @@ function StageColumnComponent({ stage, pipelineId, filters, isFinalThree }: Stag
           <GenerateProposalForm
             contact={{ _id: proposalContact._id, name: proposalContact.name || "Client" }}
             onClose={() => setProposalContact(null)}
+          />
+        )}
+      </Modal>
+      <Modal isOpen={!!invoiceContact} onClose={() => setInvoiceContact(null)} className="max-w-[900px] p-6 lg:p-10">
+        {invoiceContact && (
+          <CreateInvoiceForm
+            contact={{ _id: invoiceContact._id, name: invoiceContact.name || "Client" }}
+            onClose={() => setInvoiceContact(null)}
           />
         )}
       </Modal>

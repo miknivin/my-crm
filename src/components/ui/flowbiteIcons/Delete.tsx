@@ -1,8 +1,8 @@
-export default function DeleteIcon() {
+export default function DeleteIcon({ className = "w-6 h-6 text-gray-800 dark:text-white" }: { className?: string }) {
     return (
         <>
             <svg
-                className="w-6 h-6 text-gray-800 dark:text-white"
+                className={className}
                 aria-hidden="true"
                 xmlns="http://www.w3.org/2000/svg"
                 width={24}

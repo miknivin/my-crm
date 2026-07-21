@@ -6,10 +6,10 @@ interface UpdateProfileRequest {
   name?: string;
   phone?: string;
   address?: string;
-}
-
-interface UploadAvatarRequest {
-  avatar: FormData; 
+  avatar?: {
+    public_id: string;
+    url: string;
+  };
 }
 
 interface UpdatePasswordRequest {
@@ -92,14 +92,6 @@ export const userApi = createApi({
       }),
       invalidatesTags: ["User"],
     }),
-    uploadAvatar: builder.mutation<ApiResponse<IUser>, UploadAvatarRequest>({
-      query: (body) => ({
-        url: "/me/upload_avatar",
-        method: "PUT",
-        body,
-      }),
-      invalidatesTags: ["User"],
-    }),
     updatePassword: builder.mutation<ApiResponse<void>, UpdatePasswordRequest>({
       query: (body) => ({
         url: "/password/update",
@@ -173,7 +165,6 @@ export const userApi = createApi({
 export const {
   useGetMeQuery,
   useUpdateProfileMutation,
-  useUploadAvatarMutation,
   useUpdatePasswordMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,

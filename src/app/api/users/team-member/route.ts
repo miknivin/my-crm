@@ -191,11 +191,15 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .lean();
 
-    const closedStageIds = [
-      '682da76db5aab2e983c8863d',
-      '682da76db5aab2e983c8863e',
-      '682da76db5aab2e983c8863f',
+    const defaultClosedStages = [
+      '6858217887f5899a7e6fc6fc',
+      '6858217887f5899a7e6fc6fb',
+      '6858217887f5899a7e6fc6fd',
     ];
+
+    const closedStageIds: string[] = process.env.SUCCESS_STAGES
+      ? JSON.parse(process.env.SUCCESS_STAGES)
+      : defaultClosedStages;
 
     const users = await Promise.all(
       usersRaw.map(async (user: any) => {

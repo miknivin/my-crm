@@ -1,4 +1,4 @@
-export const TEST_MODE_LOGO_SRC = "/images/logo/logo-dark.png";
+export const TEST_MODE_LOGO_SRC = "/images/logo/logo-mark.svg";
 
 export const isTestModeLogoEnabled =
   process.env.NEXT_PUBLIC_TEST_MODE === "true";
